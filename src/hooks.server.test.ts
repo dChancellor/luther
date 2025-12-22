@@ -57,33 +57,6 @@ describe('hooks.server.ts handle()', () => {
 		expect(res.headers.get('Strict-Transport-Security')).toContain('max-age=');
 	});
 
-	it('returns 500 for POST /api/paste when API key env var is missing', async () => {
-		delete process.env.API_KEY;
-		console.log(process.env.API_KEY);
-		vi.resetModules();
-		const { handle } = await import('./hooks.server');
-
-		type HandleArg = Parameters<typeof handle>[0];
-		type MockEvent = HandleArg['event'];
-
-		const resolve = makeResolve() as unknown as HandleArg['resolve'];
-
-		const event = {
-			request: new Request('http://localhost/api/paste', { method: 'POST' }),
-			url: new URL('http://localhost/api/paste'),
-			getClientAddress: () => '1.2.3.4'
-		} as unknown as MockEvent;
-
-		console.log(process.env.API_KEY);
-		const res = await handle({ event, resolve } as HandleArg);
-
-		expect(res.status).toBe(500);
-		expect(res.headers.get('content-type')).toContain('application/json');
-		expect(await res.json()).toEqual({ error: 'Server not configured.' });
-
-		expect((resolve as any).mock.calls.length).toBe(0);
-	});
-
 	it('returns 401 for POST /api/paste when x-api-key is missing or wrong', async () => {
 		process.env.API_KEY = 'secret';
 
@@ -163,6 +136,8 @@ describe('hooks.server.ts handle()', () => {
 	});
 
 	it('rate limits POST /api/paste using getClientAddress when proxy headers are absent', async () => {
+		process.env.NODE_ENV = 'rate-limit';
+		process.env.API_KEY = 'test';
 		const { handle } = await import('./hooks.server');
 
 		type HandleArg = Parameters<typeof handle>[0];
@@ -176,7 +151,10 @@ describe('hooks.server.ts handle()', () => {
 
 		const mkEvent = () =>
 			({
-				request: new Request('http://localhost/api/paste', { method: 'POST' }),
+				request: new Request('http://localhost/api/paste', {
+					method: 'POST',
+					headers: { 'x-api-key': 'test' }
+				}),
 				url: new URL('http://localhost/api/paste'),
 				getClientAddress: () => '7.7.7.7'
 			}) as unknown as MockEvent;

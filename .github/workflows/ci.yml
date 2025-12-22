@@ -18,6 +18,7 @@ jobs:
       NODE_ENV: test
       BASE_URL: http://127.0.0.1:4173
       DATABASE_URL: file:./data/test.db
+      API_KEY: test
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,6 +58,7 @@ jobs:
       NODE_ENV: test
       BASE_URL: http://127.0.0.1:4173
       DATABASE_URL: file:./data/test.db
+      API_KEY: test
     steps:
       - name: Checkout
         uses: actions/checkout@v4
