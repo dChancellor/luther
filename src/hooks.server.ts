@@ -1,6 +1,7 @@
 // TODO - refactor opportunity - check everything
 import type { Handle } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
+import { timingSafeEqual } from 'crypto';
 
 const RATE_LIMIT = {
 	windowMs: 60_000, // 1 minute
@@ -59,7 +60,22 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 		const providedKey = event.request.headers.get('x-api-key') ?? '';
 
-		if (providedKey !== expectedKey) {
+		// Use constant-time comparison to prevent timing attacks
+		const expectedBuffer = Buffer.from(expectedKey);
+		const providedBuffer = Buffer.from(providedKey);
+
+		// Ensure buffers are the same length for timingSafeEqual
+		let isValid = false;
+		if (expectedBuffer.length === providedBuffer.length) {
+			try {
+				isValid = timingSafeEqual(expectedBuffer, providedBuffer);
+			} catch {
+				// timingSafeEqual throws if lengths differ (shouldn't happen due to check above)
+				isValid = false;
+			}
+		}
+
+		if (!isValid) {
 			return new Response(JSON.stringify({ error: 'Unauthorized' }), {
 				status: 401,
 				headers: {
