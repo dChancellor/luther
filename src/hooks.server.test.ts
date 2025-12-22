@@ -26,7 +26,6 @@ function makeResolve() {
 describe('hooks.server.ts handle()', () => {
 	beforeEach(() => {
 		vi.resetModules();
-		delete process.env.API_KEY;
 		envState.API_KEY = undefined;
 	});
 
@@ -67,9 +66,6 @@ describe('hooks.server.ts handle()', () => {
 	});
 
 	it('returns 500 for POST /api/paste when API_KEY is not configured', async () => {
-		// Ensure API_KEY is not set
-		envState.API_KEY = undefined;
-
 		const { handle } = await import('./hooks.server');
 
 		type HandleArg = Parameters<typeof handle>[0];
