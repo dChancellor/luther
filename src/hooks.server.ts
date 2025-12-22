@@ -12,7 +12,7 @@ const buckets = new Map<string, Bucket>();
 
 function getClientIp(event: Parameters<Handle>[0]['event']): string {
 	const xff = event.request.headers.get('x-forwarded-for');
-	if (xff) return xff.split(',')[0]!.trim();
+	if (xff) return xff.split(',')[0].trim();
 	return event.getClientAddress();
 }
 
@@ -51,10 +51,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 		const expectedKey = env.API_KEY;
 
 		if (!expectedKey) {
-			return new Response(JSON.stringify({ error: 'Server not configured.' }), {
-				status: 500,
-				headers: { 'content-type': 'application/json' }
-			});
+			return new Response(
+				JSON.stringify({ error: 'Server not configured: API_KEY environment variable is not set.' }),
+				{
+					status: 500,
+					headers: { 'content-type': 'application/json' }
+				}
+			);
 		}
 
 		const providedKey = event.request.headers.get('x-api-key') ?? '';
@@ -63,8 +66,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 			return new Response(JSON.stringify({ error: 'Unauthorized' }), {
 				status: 401,
 				headers: {
-					'content-type': 'application/json',
-					'www-authenticate': 'Bearer'
+					'content-type': 'application/json'
 				}
 			});
 		}
