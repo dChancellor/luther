@@ -26,6 +26,9 @@ vite.config.ts.timestamp-*
 
 # Test database
 /data
+local.db
+local.db-shm
+local.db-wal
 
 # Playwright
 /playwright-report/

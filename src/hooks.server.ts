@@ -1,6 +1,7 @@
 // TODO - refactor opportunity - check everything
 import type { Handle } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
+import { randomBytes } from 'crypto';
 
 const RATE_LIMIT = {
 	windowMs: 60_000, // 1 minute
@@ -44,6 +45,9 @@ function pruneBuckets(now: number) {
 export const handle: Handle = async ({ event, resolve }) => {
 	const isTest =
 		process.env.NODE_ENV === 'test' || event.request.headers.get('x-internal-test-bypass') === '1';
+
+	// Generate a unique nonce for this request (32 bytes for enhanced security)
+	const nonce = randomBytes(32).toString('base64');
 
 	const now = Date.now();
 
@@ -94,7 +98,17 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	pruneBuckets(now);
 
-	const response = await resolve(event);
+	// Pass the nonce to SvelteKit so it can add it to inline scripts
+	// This transformation adds nonce attributes to all <script> tags in the final HTML.
+	// This is safe because: 1) SvelteKit doesn't add nonce attributes by default,
+	// 2) this runs on final HTML output (not in string literals), and
+	// 3) ensures all legitimate inline scripts can execute under strict CSP.
+	const response = await resolve(event, {
+		transformPageChunk: ({ html }) => {
+			// Add nonce attribute to all script tags
+			return html.replace(/<script/g, `<script nonce="${nonce}"`);
+		}
+	});
 
 	const csp = [
 		"default-src 'self'",
@@ -103,7 +117,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		"object-src 'none'",
 		"connect-src 'self'",
 		"img-src 'self' data:",
-		!isTest ? "script-src 'self'" : "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+		`script-src 'self' 'nonce-${nonce}'`,
 		"style-src 'self' 'unsafe-inline'",
 		"form-action 'self'"
 	].join('; ');
