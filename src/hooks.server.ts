@@ -61,19 +61,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 		const providedKey = event.request.headers.get('x-api-key') ?? '';
 
 		// Use constant-time comparison to prevent timing attacks
-		const expectedBuffer = Buffer.from(expectedKey);
-		const providedBuffer = Buffer.from(providedKey);
+		// Pad both keys to a fixed length to prevent length-based timing attacks
+		const maxLength = Math.max(expectedKey.length, providedKey.length, 32); // Minimum 32 to avoid short key optimization
+		const expectedBuffer = Buffer.from(expectedKey.padEnd(maxLength, '\0'));
+		const providedBuffer = Buffer.from(providedKey.padEnd(maxLength, '\0'));
 
-		// Ensure buffers are the same length for timingSafeEqual
-		let isValid = false;
-		if (expectedBuffer.length === providedBuffer.length) {
-			try {
-				isValid = timingSafeEqual(expectedBuffer, providedBuffer);
-			} catch {
-				// timingSafeEqual throws if lengths differ (shouldn't happen due to check above)
-				isValid = false;
-			}
-		}
+		const isValid = timingSafeEqual(expectedBuffer, providedBuffer);
 
 		if (!isValid) {
 			return new Response(JSON.stringify({ error: 'Unauthorized' }), {
