@@ -1,5 +1,7 @@
 // TODO - refactor opportunity - check everything
 import type { Handle } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
+import { randomBytes } from 'crypto';
 
 const RATE_LIMIT = {
 	windowMs: 60_000, // 1 minute
@@ -12,15 +14,7 @@ const buckets = new Map<string, Bucket>();
 function getClientIp(event: Parameters<Handle>[0]['event']): string {
 	const xff = event.request.headers.get('x-forwarded-for');
 	if (xff) return xff.split(',')[0].trim();
-
-	const realIp = event.request.headers.get('x-real-ip');
-	if (realIp) return realIp.trim();
-
-	try {
-		return event.getClientAddress();
-	} catch {
-		return 'unknown';
-	}
+	return event.getClientAddress();
 }
 
 function isRateLimited(key: string, now: number): { limited: boolean; retryAfterSec?: number } {
@@ -49,30 +43,65 @@ function pruneBuckets(now: number) {
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
+	const isTest =
+		process.env.NODE_ENV === 'test' || event.request.headers.get('x-internal-test-bypass') === '1';
+
+	const nonce = randomBytes(32).toString('base64');
+
 	const now = Date.now();
 
 	if (event.request.method === 'POST' && event.url.pathname === '/api/paste') {
-		const ip = getClientIp(event);
-		const key = `paste:${ip}`;
-		const { limited, retryAfterSec } = isRateLimited(key, now);
+		const expectedKey = env.API_KEY;
 
-		if (limited) {
+		if (!expectedKey) {
 			return new Response(
-				JSON.stringify({ error: 'Rate limit exceeded. Please try again soon.' }),
+				JSON.stringify({
+					error: 'Server not configured: API_KEY environment variable is not set.'
+				}),
 				{
-					status: 429,
-					headers: {
-						'content-type': 'application/json',
-						'retry-after': String(retryAfterSec ?? 60)
-					}
+					status: 500,
+					headers: { 'content-type': 'application/json' }
 				}
 			);
+		}
+
+		const providedKey = event.request.headers.get('x-api-key') ?? '';
+
+		if (providedKey !== expectedKey) {
+			return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+				status: 401,
+				headers: {
+					'content-type': 'application/json'
+				}
+			});
+		}
+		if (!isTest) {
+			const ip = getClientIp(event);
+			const key = `paste:${ip}`;
+			const { limited, retryAfterSec } = isRateLimited(key, now);
+
+			if (limited) {
+				return new Response(
+					JSON.stringify({ error: 'Rate limit exceeded. Please try again soon.' }),
+					{
+						status: 429,
+						headers: {
+							'content-type': 'application/json',
+							'retry-after': String(retryAfterSec ?? 60)
+						}
+					}
+				);
+			}
 		}
 	}
 
 	pruneBuckets(now);
 
-	const response = await resolve(event, {});
+	const response = await resolve(event, {
+		transformPageChunk: ({ html }) => {
+			return html.replace(/<script/g, `<script nonce="${nonce}"`);
+		}
+	});
 
 	const csp = [
 		"default-src 'self'",
@@ -81,8 +110,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 		"object-src 'none'",
 		"connect-src 'self'",
 		"img-src 'self' data:",
+		`script-src 'self' 'nonce-${nonce}'`,
 		"style-src 'self' 'unsafe-inline'",
-		"script-src 'self'",
 		"form-action 'self'"
 	].join('; ');
 

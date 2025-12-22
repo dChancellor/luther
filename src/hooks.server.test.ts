@@ -2,6 +2,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { TEST_API_KEY } from './test/constants';
+
+const envState = vi.hoisted(() => ({
+	API_KEY: undefined as string | undefined
+}));
+
+vi.mock('$env/dynamic/private', () => ({
+	env: envState
+}));
 
 function makeResolve() {
 	return vi.fn(async () => {
@@ -18,6 +27,7 @@ function makeResolve() {
 describe('hooks.server.ts handle()', () => {
 	beforeEach(() => {
 		vi.resetModules();
+		envState.API_KEY = undefined;
 	});
 
 	afterEach(() => {
@@ -56,7 +66,71 @@ describe('hooks.server.ts handle()', () => {
 		expect(res.headers.get('Strict-Transport-Security')).toContain('max-age=');
 	});
 
-	it('rate limits POST /api/paste per client IP from x-forwarded-for', async () => {
+	it('returns 500 for POST /api/paste when API_KEY is not configured', async () => {
+		const { handle } = await import('./hooks.server');
+
+		type HandleArg = Parameters<typeof handle>[0];
+		type MockEvent = HandleArg['event'];
+
+		const resolve = makeResolve() as unknown as HandleArg['resolve'];
+
+		const event = {
+			request: new Request('http://localhost/api/paste', { method: 'POST' }),
+			url: new URL('http://localhost/api/paste'),
+			getClientAddress: () => '1.2.3.4'
+		} as unknown as MockEvent;
+
+		const res = await handle({ event, resolve } as HandleArg);
+		expect(res.status).toBe(500);
+		expect(res.headers.get('content-type')).toContain('application/json');
+		expect(await res.json()).toEqual({
+			error: 'Server not configured: API_KEY environment variable is not set.'
+		});
+
+		expect((resolve as any).mock.calls.length).toBe(0);
+	});
+
+	it('returns 401 for POST /api/paste when x-api-key is missing or wrong', async () => {
+		envState.API_KEY = 'secret';
+
+		const { handle } = await import('./hooks.server');
+
+		type HandleArg = Parameters<typeof handle>[0];
+		type MockEvent = HandleArg['event'];
+
+		const resolve = makeResolve() as unknown as HandleArg['resolve'];
+
+		const eventMissing = {
+			request: new Request('http://localhost/api/paste', { method: 'POST' }),
+			url: new URL('http://localhost/api/paste'),
+			getClientAddress: () => '1.2.3.4'
+		} as unknown as MockEvent;
+
+		const resMissing = await handle({ event: eventMissing, resolve } as HandleArg);
+		expect(resMissing.status).toBe(401);
+		expect(resMissing.headers.get('content-type')).toContain('application/json');
+		expect(await resMissing.json()).toEqual({ error: 'Unauthorized' });
+
+		const eventWrong = {
+			request: new Request('http://localhost/api/paste', {
+				method: 'POST',
+				headers: { 'x-api-key': 'wrong' }
+			}),
+			url: new URL('http://localhost/api/paste'),
+			getClientAddress: () => '1.2.3.4'
+		} as unknown as MockEvent;
+
+		const resWrong = await handle({ event: eventWrong, resolve } as HandleArg);
+		expect(resWrong.status).toBe(401);
+		expect(resWrong.headers.get('content-type')).toContain('application/json');
+		expect(await resWrong.json()).toEqual({ error: 'Unauthorized' });
+
+		expect((resolve as any).mock.calls.length).toBe(0);
+	});
+
+	it('rate limits authorized POST /api/paste per API key', async () => {
+		process.env.NODE_ENV = 'rate-limit';
+		envState.API_KEY = 'test';
 		const { handle } = await import('./hooks.server');
 
 		type HandleArg = Parameters<typeof handle>[0];
@@ -66,11 +140,13 @@ describe('hooks.server.ts handle()', () => {
 
 		const resolve = makeResolve() as unknown as HandleArg['resolve'];
 
+		process.env.NODE_ENV = 'rate-limit';
+
 		const mkEvent = () =>
 			({
 				request: new Request('http://localhost/api/paste', {
 					method: 'POST',
-					headers: { 'x-forwarded-for': '1.2.3.4, 5.6.7.8' }
+					headers: { 'x-api-key': TEST_API_KEY }
 				}),
 				url: new URL('http://localhost/api/paste'),
 				getClientAddress: () => '9.9.9.9'
@@ -78,7 +154,6 @@ describe('hooks.server.ts handle()', () => {
 
 		let last: Response | undefined;
 
-		// If your limiter is maxRequests = 30, the 31st request should be blocked.
 		for (let i = 0; i < 6; i++) {
 			last = await handle({ event: mkEvent(), resolve } as HandleArg);
 		}
@@ -90,11 +165,12 @@ describe('hooks.server.ts handle()', () => {
 		const body = await last!.json();
 		expect(body).toEqual({ error: 'Rate limit exceeded. Please try again soon.' });
 
-		// Allowed requests should have reached resolve
 		expect((resolve as any).mock.calls.length).toBe(5);
 	});
 
 	it('rate limits POST /api/paste using getClientAddress when proxy headers are absent', async () => {
+		process.env.NODE_ENV = 'rate-limit';
+		envState.API_KEY = 'test';
 		const { handle } = await import('./hooks.server');
 
 		type HandleArg = Parameters<typeof handle>[0];
@@ -104,9 +180,14 @@ describe('hooks.server.ts handle()', () => {
 
 		const resolve = makeResolve() as unknown as HandleArg['resolve'];
 
+		process.env.NODE_ENV = 'rate-limit';
+
 		const mkEvent = () =>
 			({
-				request: new Request('http://localhost/api/paste', { method: 'POST' }),
+				request: new Request('http://localhost/api/paste', {
+					method: 'POST',
+					headers: { 'x-api-key': TEST_API_KEY }
+				}),
 				url: new URL('http://localhost/api/paste'),
 				getClientAddress: () => '7.7.7.7'
 			}) as unknown as MockEvent;
@@ -122,6 +203,8 @@ describe('hooks.server.ts handle()', () => {
 	});
 
 	it('does not rate limit other routes/methods', async () => {
+		envState.API_KEY = 'secret';
+
 		const { handle } = await import('./hooks.server');
 
 		type HandleArg = Parameters<typeof handle>[0];

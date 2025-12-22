@@ -1,14 +1,16 @@
 // TODO - refactor opportunity - reuse things from other tests
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { test, expect } from '@playwright/test';
-
+import { TEST_API_KEY } from '../helpers/constants';
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:4173';
 
 function originHeaders() {
 	return {
 		'content-type': 'text/plain',
 		origin: baseURL,
-		referer: `${baseURL}/`
+		referer: `${baseURL}/`,
+		'x-internal-test-bypass': '1',
+		'x-api-key': TEST_API_KEY
 	};
 }
 

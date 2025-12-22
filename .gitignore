@@ -24,6 +24,12 @@ vite.config.ts.timestamp-*
 
 /db
 
+# Test database
+/data
+local.db
+local.db-shm
+local.db-wal
+
 # Playwright
 /playwright-report/
 /blob-report/
