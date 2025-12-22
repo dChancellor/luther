@@ -12,14 +12,6 @@ vi.mock('$env/dynamic/private', () => ({
 	env: envState
 }));
 
-const envState = vi.hoisted(() => ({
-	API_KEY: undefined as string | undefined
-}));
-
-vi.mock('$env/dynamic/private', () => ({
-	env: envState
-}));
-
 function makeResolve() {
 	return vi.fn(async () => {
 		return new Response('ok', {

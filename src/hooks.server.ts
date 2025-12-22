@@ -52,7 +52,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 		if (!expectedKey) {
 			return new Response(
-				JSON.stringify({ error: 'Server not configured: API_KEY environment variable is not set.' }),
+				JSON.stringify({
+					error: 'Server not configured: API_KEY environment variable is not set.'
+				}),
 				{
 					status: 500,
 					headers: { 'content-type': 'application/json' }
