@@ -1,7 +1,6 @@
 // TODO - refactor opportunity - check everything
 import type { Handle } from '@sveltejs/kit';
 
-const shouldRateLimit = !process.env.CI && process.env.NODE_ENV !== 'test';
 const isProd = process.env.NODE_ENV === 'production';
 
 const RATE_LIMIT = {
@@ -52,12 +51,13 @@ function pruneBuckets(now: number) {
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
+	const bypassRateLimit = !isProd && event.request.headers.get('x-internal-test-bypass') === '1';
 	const now = Date.now();
 
 	if (event.request.method === 'POST' && event.url.pathname === '/api/paste') {
 		const ip = getClientIp(event);
 		const key = `paste:${ip}`;
-		if (shouldRateLimit) {
+		if (!bypassRateLimit) {
 			const { limited, retryAfterSec } = isRateLimited(key, now);
 			if (limited) {
 				return new Response(

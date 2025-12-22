@@ -11,6 +11,7 @@ function withOriginHeaders(extra?: Record<string, string>) {
 		'content-type': 'text/plain',
 		origin: baseURL,
 		referer: `${baseURL}/`,
+		'x-internal-test-bypass': '1',
 		...extra
 	};
 }
