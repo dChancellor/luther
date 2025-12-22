@@ -12,7 +12,10 @@ export default defineConfig({
 	reporter: 'html',
 	use: {
 		baseURL: baseURL,
-		trace: 'on-first-retry'
+		trace: 'on-first-retry',
+		extraHTTPHeaders: {
+			'x-internal-test-bypass': '1'
+		}
 	},
 	projects: [
 		{
@@ -33,7 +36,6 @@ export default defineConfig({
 			use: { ...devices['Desktop Safari'], baseURL },
 			retries: 2
 		},
-
 		{ name: 'api', use: { baseURL }, testMatch: /api\/.*\.spec\.ts/, workers: 1, retries: 2 }
 	],
 	webServer: {

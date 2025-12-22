@@ -66,6 +66,8 @@ describe('hooks.server.ts handle()', () => {
 
 		const resolve = makeResolve() as unknown as HandleArg['resolve'];
 
+		process.env.NODE_ENV = 'rate-limit';
+
 		const mkEvent = () =>
 			({
 				request: new Request('http://localhost/api/paste', {
@@ -103,6 +105,8 @@ describe('hooks.server.ts handle()', () => {
 		vi.spyOn(Date, 'now').mockReturnValue(2_000_000);
 
 		const resolve = makeResolve() as unknown as HandleArg['resolve'];
+
+		process.env.NODE_ENV = 'rate-limit';
 
 		const mkEvent = () =>
 			({

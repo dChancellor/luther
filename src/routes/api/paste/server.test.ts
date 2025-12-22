@@ -37,7 +37,10 @@ describe('POST /api/paste', () => {
 
 		const request = new Request('https://example.com', {
 			method: 'POST',
-			body: text
+			body: text,
+			headers: {
+				'x-internal-test-bypass': '1'
+			}
 		});
 
 		const response = await POST({ request, url: mockUrl } as any);
@@ -56,7 +59,10 @@ describe('POST /api/paste', () => {
 	it('returns 400 if the text is empty', async () => {
 		const request = new Request('https://example.com', {
 			method: 'POST',
-			body: '   '
+			body: '   ',
+			headers: {
+				'x-internal-test-bypass': '1'
+			}
 		});
 
 		const response = await POST({ request, url: mockUrl } as any);
@@ -70,7 +76,10 @@ describe('POST /api/paste', () => {
 		const bigText = 'a'.repeat(200_001);
 		const request = new Request('https://example.com', {
 			method: 'POST',
-			body: bigText
+			body: bigText,
+			headers: {
+				'x-internal-test-bypass': '1'
+			}
 		});
 
 		const response = await POST({ request, url: mockUrl } as any);
@@ -87,7 +96,10 @@ describe('POST /api/paste', () => {
 
 		const request = new Request('https://example.com', {
 			method: 'POST',
-			body: 'some text'
+			body: 'some text',
+			headers: {
+				'x-internal-test-bypass': '1'
+			}
 		});
 
 		const response = await POST({ request, url: mockUrl } as any);
@@ -101,7 +113,10 @@ describe('POST /api/paste', () => {
 
 		const request = new Request('https://example.com', {
 			method: 'POST',
-			body: 'some text'
+			body: 'some text',
+			headers: {
+				'x-internal-test-bypass': '1'
+			}
 		});
 
 		const response = await POST({ request, url: mockUrl } as any);
