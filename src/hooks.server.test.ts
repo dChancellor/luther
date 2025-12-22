@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { TEST_API_KEY } from '../test-constants';
+import { TEST_API_KEY } from './test/constants';
 
 const envState = vi.hoisted(() => ({
 	API_KEY: undefined as string | undefined

@@ -18,8 +18,6 @@ jobs:
       NODE_ENV: test
       BASE_URL: http://127.0.0.1:4173
       DATABASE_URL: file:./data/test.db
-      # IMPORTANT: This API_KEY value must match TEST_API_KEY in test-constants.ts
-      # All test files import and use TEST_API_KEY to ensure consistency
       API_KEY: test
     steps:
       - name: Checkout
@@ -60,8 +58,6 @@ jobs:
       NODE_ENV: test
       BASE_URL: http://127.0.0.1:4173
       DATABASE_URL: file:./data/test.db
-      # IMPORTANT: This API_KEY value must match TEST_API_KEY in test-constants.ts
-      # All test files import and use TEST_API_KEY to ensure consistency
       API_KEY: test
     steps:
       - name: Checkout

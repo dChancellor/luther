@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { TEST_API_KEY } from '../../test-constants';
+import { TEST_API_KEY } from '../helpers/constants';
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:4173';
 
