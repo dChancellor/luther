@@ -12,7 +12,7 @@ const buckets = new Map<string, Bucket>();
 
 function getClientIp(event: Parameters<Handle>[0]['event']): string {
 	const xff = event.request.headers.get('x-forwarded-for');
-	if (xff) return xff.split(',')[0]!.trim();
+	if (xff) return xff.split(',')[0].trim();
 	return event.getClientAddress();
 }
 
