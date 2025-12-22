@@ -36,3 +36,25 @@ npm run build
 You can preview the production build with `npm run preview`.
 
 > To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+
+## Testing
+
+This project includes both unit tests and end-to-end (e2e) tests.
+
+### Running Tests
+
+```sh
+# Run unit tests
+npm run test
+
+# Run e2e tests
+npm run e2e
+```
+
+### Test Configuration
+
+The tests use a shared test constant `TEST_API_KEY` defined in `test-constants.ts`. This constant must match the `API_KEY` environment variable set in:
+- `.github/workflows/ci.yml` for CI/CD pipelines
+- Your local environment when running tests manually
+
+This ensures consistency across all test environments and prevents authentication failures in tests.
