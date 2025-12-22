@@ -78,6 +78,9 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
+      - name: SvelteKit sync
+        run: npx svelte-kit sync
+
       - name: Run Playwright tests
         run: npm run e2e
 

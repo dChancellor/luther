@@ -1,6 +1,9 @@
 // TODO - refactor opportunity - check everything
 import type { Handle } from '@sveltejs/kit';
 
+const shouldRateLimit = !process.env.CI && process.env.NODE_ENV !== 'test';
+const isProd = process.env.NODE_ENV === 'production';
+
 const RATE_LIMIT = {
 	windowMs: 60_000, // 1 minute
 	maxRequests: 5
@@ -54,19 +57,20 @@ export const handle: Handle = async ({ event, resolve }) => {
 	if (event.request.method === 'POST' && event.url.pathname === '/api/paste') {
 		const ip = getClientIp(event);
 		const key = `paste:${ip}`;
-		const { limited, retryAfterSec } = isRateLimited(key, now);
-
-		if (limited) {
-			return new Response(
-				JSON.stringify({ error: 'Rate limit exceeded. Please try again soon.' }),
-				{
-					status: 429,
-					headers: {
-						'content-type': 'application/json',
-						'retry-after': String(retryAfterSec ?? 60)
+		if (shouldRateLimit) {
+			const { limited, retryAfterSec } = isRateLimited(key, now);
+			if (limited) {
+				return new Response(
+					JSON.stringify({ error: 'Rate limit exceeded. Please try again soon.' }),
+					{
+						status: 429,
+						headers: {
+							'content-type': 'application/json',
+							'retry-after': String(retryAfterSec ?? 60)
+						}
 					}
-				}
-			);
+				);
+			}
 		}
 	}
 
@@ -82,7 +86,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		"connect-src 'self'",
 		"img-src 'self' data:",
 		"style-src 'self' 'unsafe-inline'",
-		"script-src 'self'",
+		isProd ? "script-src 'self'" : "script-src 'self' 'unsafe-inline'",
 		"form-action 'self'"
 	].join('; ');
 
