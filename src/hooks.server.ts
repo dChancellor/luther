@@ -1,5 +1,6 @@
 // TODO - refactor opportunity - check everything
 import type { Handle } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
 
 const RATE_LIMIT = {
 	windowMs: 60_000, // 1 minute
@@ -11,16 +12,8 @@ const buckets = new Map<string, Bucket>();
 
 function getClientIp(event: Parameters<Handle>[0]['event']): string {
 	const xff = event.request.headers.get('x-forwarded-for');
-	if (xff) return xff.split(',')[0].trim();
-
-	const realIp = event.request.headers.get('x-real-ip');
-	if (realIp) return realIp.trim();
-
-	try {
-		return event.getClientAddress();
-	} catch {
-		return 'unknown';
-	}
+	if (xff) return xff.split(',')[0]!.trim();
+	return event.getClientAddress();
 }
 
 function isRateLimited(key: string, now: number): { limited: boolean; retryAfterSec?: number } {
@@ -55,11 +48,31 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const now = Date.now();
 
 	if (event.request.method === 'POST' && event.url.pathname === '/api/paste') {
-		const ip = getClientIp(event);
-		const key = `paste:${ip}`;
+		const expectedKey = env.API_KEY;
 
+		if (!expectedKey) {
+			return new Response(JSON.stringify({ error: 'Server not configured.' }), {
+				status: 500,
+				headers: { 'content-type': 'application/json' }
+			});
+		}
+
+		const providedKey = event.request.headers.get('x-api-key') ?? '';
+
+		if (providedKey !== expectedKey) {
+			return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+				status: 401,
+				headers: {
+					'content-type': 'application/json',
+					'www-authenticate': 'Bearer'
+				}
+			});
+		}
 		if (!isTest) {
+			const ip = getClientIp(event);
+			const key = `paste:${ip}`;
 			const { limited, retryAfterSec } = isRateLimited(key, now);
+
 			if (limited) {
 				return new Response(
 					JSON.stringify({ error: 'Rate limit exceeded. Please try again soon.' }),
@@ -77,7 +90,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	pruneBuckets(now);
 
-	const response = await resolve(event, {});
+	const response = await resolve(event);
 
 	const csp = [
 		"default-src 'self'",

@@ -12,6 +12,7 @@ function withOriginHeaders(extra?: Record<string, string>) {
 		origin: baseURL,
 		referer: `${baseURL}/`,
 		'x-internal-test-bypass': '1',
+		'x-api-key': 'test',
 		...extra
 	};
 }

@@ -9,7 +9,8 @@ function originHeaders() {
 		'content-type': 'text/plain',
 		origin: baseURL,
 		referer: `${baseURL}/`,
-		'x-internal-test-bypass': '1'
+		'x-internal-test-bypass': '1',
+		'x-api-key': 'test'
 	};
 }
 
