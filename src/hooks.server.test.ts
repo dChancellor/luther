@@ -83,7 +83,9 @@ describe('hooks.server.ts handle()', () => {
 		const res = await handle({ event, resolve } as HandleArg);
 		expect(res.status).toBe(500);
 		expect(res.headers.get('content-type')).toContain('application/json');
-		expect(await res.json()).toEqual({ error: 'Server not configured.' });
+		expect(await res.json()).toEqual({
+			error: 'Server not configured: API_KEY environment variable is not set.'
+		});
 
 		expect((resolve as any).mock.calls.length).toBe(0);
 	});
