@@ -1,0 +1,13 @@
+import hljs from 'highlight.js';
+
+function detectLanguage(code: string): string {
+  const result = hljs.highlightAuto(code);
+
+  if (!result.language) return 'text';
+
+  // Optional: reject low-confidence guesses
+  if (result.relevance < 5) return 'text';
+
+  return result.language;
+}
+
