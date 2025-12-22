@@ -1,8 +1,8 @@
 import { createClient } from '@libsql/client';
 import { env } from '$env/dynamic/private';
 
-const DATABASE_URL = env.DATABASE_URL;
-const AUTH_TOKEN = env.AUTH_TOKEN;
+const DATABASE_URL = env.DATABASE_URL ?? '';
+const AUTH_TOKEN = env.AUTH_TOKEN ?? '';
 
 const isFile = DATABASE_URL.startsWith('file:');
 
