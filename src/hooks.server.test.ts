@@ -2,6 +2,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { TEST_API_KEY } from '../test-constants';
+
+const envState = vi.hoisted(() => ({
+	API_KEY: undefined as string | undefined
+}));
+
+vi.mock('$env/dynamic/private', () => ({
+	env: envState
+}));
 
 function makeResolve() {
 	return vi.fn(async () => {
@@ -19,6 +28,7 @@ describe('hooks.server.ts handle()', () => {
 	beforeEach(() => {
 		vi.resetModules();
 		delete process.env.API_KEY;
+		envState.API_KEY = undefined;
 	});
 
 	afterEach(() => {
@@ -59,6 +69,7 @@ describe('hooks.server.ts handle()', () => {
 
 	it('returns 401 for POST /api/paste when x-api-key is missing or wrong', async () => {
 		process.env.API_KEY = 'secret';
+		envState.API_KEY = 'secret';
 
 		const { handle } = await import('./hooks.server');
 
@@ -97,7 +108,8 @@ describe('hooks.server.ts handle()', () => {
 
 	it('rate limits authorized POST /api/paste per API key', async () => {
 		process.env.NODE_ENV = 'rate-limit';
-		process.env.API_KEY = 'test';
+		process.env.API_KEY = TEST_API_KEY;
+		envState.API_KEY = TEST_API_KEY;
 		const { handle } = await import('./hooks.server');
 
 		type HandleArg = Parameters<typeof handle>[0];
@@ -113,7 +125,7 @@ describe('hooks.server.ts handle()', () => {
 			({
 				request: new Request('http://localhost/api/paste', {
 					method: 'POST',
-					headers: { 'x-api-key': 'test' }
+					headers: { 'x-api-key': TEST_API_KEY }
 				}),
 				url: new URL('http://localhost/api/paste'),
 				getClientAddress: () => '9.9.9.9'
@@ -137,7 +149,8 @@ describe('hooks.server.ts handle()', () => {
 
 	it('rate limits POST /api/paste using getClientAddress when proxy headers are absent', async () => {
 		process.env.NODE_ENV = 'rate-limit';
-		process.env.API_KEY = 'test';
+		process.env.API_KEY = TEST_API_KEY;
+		envState.API_KEY = TEST_API_KEY;
 		const { handle } = await import('./hooks.server');
 
 		type HandleArg = Parameters<typeof handle>[0];
@@ -153,7 +166,7 @@ describe('hooks.server.ts handle()', () => {
 			({
 				request: new Request('http://localhost/api/paste', {
 					method: 'POST',
-					headers: { 'x-api-key': 'test' }
+					headers: { 'x-api-key': TEST_API_KEY }
 				}),
 				url: new URL('http://localhost/api/paste'),
 				getClientAddress: () => '7.7.7.7'
@@ -171,6 +184,7 @@ describe('hooks.server.ts handle()', () => {
 
 	it('does not rate limit other routes/methods', async () => {
 		process.env.API_KEY = 'secret';
+		envState.API_KEY = 'secret';
 
 		const { handle } = await import('./hooks.server');
 
