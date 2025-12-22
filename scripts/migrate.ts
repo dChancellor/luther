@@ -1,9 +1,11 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { loadEnvFile } from 'node:process';
 import { join } from 'node:path';
 import { createClient } from '@libsql/client';
 
-loadEnvFile();
+if (existsSync('.env')) {
+	loadEnvFile('.env');
+}
 
 const url = process.env.DATABASE_URL;
 const authToken = process.env.AUTH_TOKEN;
