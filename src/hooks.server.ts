@@ -51,10 +51,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 		const expectedKey = env.API_KEY;
 
 		if (!expectedKey) {
-			return new Response(JSON.stringify({ error: 'Server not configured.' }), {
-				status: 500,
-				headers: { 'content-type': 'application/json' }
-			});
+			return new Response(
+				JSON.stringify({ error: 'Server not configured: API_KEY environment variable is not set.' }),
+				{
+					status: 500,
+					headers: { 'content-type': 'application/json' }
+				}
+			);
 		}
 
 		const providedKey = event.request.headers.get('x-api-key') ?? '';
