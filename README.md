@@ -54,6 +54,7 @@ npm run e2e
 ### Test Configuration
 
 The tests use a shared test constant `TEST_API_KEY` defined in `test-constants.ts`. This constant must match the `API_KEY` environment variable set in:
+
 - `.github/workflows/ci.yml` for CI/CD pipelines
 - Your local environment when running tests manually
 
