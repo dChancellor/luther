@@ -61,8 +61,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 		const providedKey = event.request.headers.get('x-api-key') ?? '';
 
 		// Use constant-time comparison to prevent timing attacks
-		// Pad both keys to a fixed length to prevent length-based timing attacks
-		const maxLength = Math.max(expectedKey.length, providedKey.length, 32); // Minimum 32 to avoid short key optimization
+		// Pad both keys to a fixed length based only on expected key length
+		// to prevent length-based timing attacks
+		const maxLength = Math.max(32, expectedKey.length);
 		const expectedBuffer = Buffer.from(expectedKey.padEnd(maxLength, '\0'));
 		const providedBuffer = Buffer.from(providedKey.padEnd(maxLength, '\0'));
 
