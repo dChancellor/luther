@@ -63,8 +63,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 			return new Response(JSON.stringify({ error: 'Unauthorized' }), {
 				status: 401,
 				headers: {
-					'content-type': 'application/json',
-					'www-authenticate': 'Bearer'
+					'content-type': 'application/json'
 				}
 			});
 		}
