@@ -103,7 +103,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		"object-src 'none'",
 		"connect-src 'self'",
 		"img-src 'self' data:",
-		!isTest ? "script-src 'self'" : "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+		"script src 'self'",
 		"style-src 'self' 'unsafe-inline'",
 		"form-action 'self'"
 	].join('; ');

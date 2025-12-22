@@ -34,7 +34,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: prepare db
+      - name: Prepare db
         run: |
           mkdir -p data
           npm run migrate
@@ -76,7 +76,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: prepare db
+      - name: Prepare db
         run: |
           mkdir -p data
           npm run migrate
