@@ -3,6 +3,7 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import { TEST_API_KEY } from '../../test-constants';
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:4173';
 
@@ -12,7 +13,7 @@ function withOriginHeaders(extra?: Record<string, string>) {
 		origin: baseURL,
 		referer: `${baseURL}/`,
 		'x-internal-test-bypass': '1',
-		'x-api-key': 'test',
+		'x-api-key': TEST_API_KEY,
 		...extra
 	};
 }

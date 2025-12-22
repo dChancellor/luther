@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { TEST_API_KEY } from '../test-constants';
 
 const envState = vi.hoisted(() => ({
 	API_KEY: undefined as string | undefined
@@ -65,27 +66,29 @@ describe('hooks.server.ts handle()', () => {
 		expect(res.headers.get('Strict-Transport-Security')).toContain('max-age=');
 	});
 
-	// it('returns 500 for POST /api/paste when API_KEY is not configured', async () => {
-	// 	const { handle } = await import('./hooks.server');
-	//
-	// 	type HandleArg = Parameters<typeof handle>[0];
-	// 	type MockEvent = HandleArg['event'];
-	//
-	// 	const resolve = makeResolve() as unknown as HandleArg['resolve'];
-	//
-	// 	const event = {
-	// 		request: new Request('http://localhost/api/paste', { method: 'POST' }),
-	// 		url: new URL('http://localhost/api/paste'),
-	// 		getClientAddress: () => '1.2.3.4'
-	// 	} as unknown as MockEvent;
-	//
-	// 	const res = await handle({ event, resolve } as HandleArg);
-	// 	expect(res.status).toBe(500);
-	// 	expect(res.headers.get('content-type')).toContain('application/json');
-	// 	expect(await res.json()).toEqual({ error: 'Server not configured.' });
-	//
-	// 	expect((resolve as any).mock.calls.length).toBe(0);
-	// });
+	it('returns 500 for POST /api/paste when API_KEY is not configured', async () => {
+		const { handle } = await import('./hooks.server');
+
+		type HandleArg = Parameters<typeof handle>[0];
+		type MockEvent = HandleArg['event'];
+
+		const resolve = makeResolve() as unknown as HandleArg['resolve'];
+
+		const event = {
+			request: new Request('http://localhost/api/paste', { method: 'POST' }),
+			url: new URL('http://localhost/api/paste'),
+			getClientAddress: () => '1.2.3.4'
+		} as unknown as MockEvent;
+
+		const res = await handle({ event, resolve } as HandleArg);
+		expect(res.status).toBe(500);
+		expect(res.headers.get('content-type')).toContain('application/json');
+		expect(await res.json()).toEqual({
+			error: 'Server not configured: API_KEY environment variable is not set.'
+		});
+
+		expect((resolve as any).mock.calls.length).toBe(0);
+	});
 
 	it('returns 401 for POST /api/paste when x-api-key is missing or wrong', async () => {
 		envState.API_KEY = 'secret';
@@ -143,7 +146,7 @@ describe('hooks.server.ts handle()', () => {
 			({
 				request: new Request('http://localhost/api/paste', {
 					method: 'POST',
-					headers: { 'x-api-key': 'test' }
+					headers: { 'x-api-key': TEST_API_KEY }
 				}),
 				url: new URL('http://localhost/api/paste'),
 				getClientAddress: () => '9.9.9.9'
@@ -183,7 +186,7 @@ describe('hooks.server.ts handle()', () => {
 			({
 				request: new Request('http://localhost/api/paste', {
 					method: 'POST',
-					headers: { 'x-api-key': 'test' }
+					headers: { 'x-api-key': TEST_API_KEY }
 				}),
 				url: new URL('http://localhost/api/paste'),
 				getClientAddress: () => '7.7.7.7'
