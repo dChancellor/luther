@@ -52,7 +52,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 		if (!expectedKey) {
 			return new Response(
-				JSON.stringify({ error: 'Server not configured: API_KEY environment variable is not set.' }),
+				JSON.stringify({
+					error: 'Server not configured: API_KEY environment variable is not set.'
+				}),
 				{
 					status: 500,
 					headers: { 'content-type': 'application/json' }
@@ -101,7 +103,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		"object-src 'none'",
 		"connect-src 'self'",
 		"img-src 'self' data:",
-		!isTest ? "script-src 'self'" : "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+		"script src 'self'",
 		"style-src 'self' 'unsafe-inline'",
 		"form-action 'self'"
 	].join('; ');
