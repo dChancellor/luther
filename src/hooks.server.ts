@@ -8,8 +8,16 @@ const RATE_LIMIT = {
 	maxRequests: 5
 };
 
+const API_KEY_COMPARISON_LENGTH = 64; // Fixed length for constant-time comparison
+
 type Bucket = { resetAt: number; count: number };
 const buckets = new Map<string, Bucket>();
+
+function createFixedLengthBuffer(key: string): Buffer {
+	return Buffer.from(
+		key.padEnd(API_KEY_COMPARISON_LENGTH, '\0').slice(0, API_KEY_COMPARISON_LENGTH)
+	);
+}
 
 function getClientIp(event: Parameters<Handle>[0]['event']): string {
 	const xff = event.request.headers.get('x-forwarded-for');
@@ -61,14 +69,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 		const providedKey = event.request.headers.get('x-api-key') ?? '';
 
 		// Use constant-time comparison to prevent timing attacks
-		// Use fixed-length padding to prevent any length-based timing attacks
-		const FIXED_LENGTH = 64; // Fixed length for all comparisons
-		const expectedBuffer = Buffer.from(
-			expectedKey.padEnd(FIXED_LENGTH, '\0').slice(0, FIXED_LENGTH)
-		);
-		const providedBuffer = Buffer.from(
-			providedKey.padEnd(FIXED_LENGTH, '\0').slice(0, FIXED_LENGTH)
-		);
+		// Use fixed-length buffers to prevent any length-based timing attacks
+		const expectedBuffer = createFixedLengthBuffer(expectedKey);
+		const providedBuffer = createFixedLengthBuffer(providedKey);
 
 		const isValid = timingSafeEqual(expectedBuffer, providedBuffer);
 
