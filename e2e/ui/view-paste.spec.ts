@@ -35,7 +35,7 @@ async function createPaste(request: any, content: string) {
 
 test.describe('Paste view page', () => {
 	test('renders title, metadata, code, and raw link', async ({ page, request }) => {
-		const jsTextFile = resolve('example_inputs/js.txt');
+		const jsTextFile = resolve('/examples/example_inputs/js.txt');
 
 		const jsText = readFileSync(jsTextFile);
 
@@ -106,7 +106,7 @@ test.describe('Paste view page', () => {
 	});
 
 	test('view page hydrates and shows highlighted markup', async ({ page, request }) => {
-		const jsTextFile = resolve('example_inputs/js.txt');
+		const jsTextFile = resolve('examples/example_inputs/js.txt');
 
 		const jsText = readFileSync(jsTextFile);
 
