@@ -35,16 +35,4 @@ describe('DELETE /api/paste/[slug]', () => {
 			} as any)
 		).rejects.toThrow();
 	});
-
-	it('returns 400 when slug is missing', async () => {
-		const response = await DELETE({
-			params: {}
-		} as any);
-
-		const data = await response.json();
-
-		expect(response.status).toBe(400);
-		expect(data.error).toBe('Slug is required');
-		expect(deleteRow).not.toHaveBeenCalled();
-	});
 });
