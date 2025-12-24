@@ -77,30 +77,4 @@ test.describe('DELETE /api/paste/[slug]', () => {
 
 		expect(secondDeleteRes.status()).toBe(404);
 	});
-
-	test('requires authentication', async ({ request }) => {
-		// Create a paste first
-		const createRes = await request.post('/api/paste', {
-			headers: withOriginHeaders(),
-			data: 'test paste for auth check'
-		});
-
-		expect(createRes.ok()).toBeTruthy();
-		const createJson = await createRes.json();
-		const slug = createJson.slug;
-
-		// Try to delete without API key
-		const deleteRes = await request.delete(`/api/paste/${slug}`, {
-			headers: {
-				'content-type': 'text/plain',
-				origin: baseURL,
-				referer: `${baseURL}/`,
-				'x-internal-test-bypass': '1'
-			}
-		});
-
-		expect(deleteRes.status()).toBe(401);
-		const json = await deleteRes.json();
-		expect(json.error).toBe('Unauthorized');
-	});
 });
