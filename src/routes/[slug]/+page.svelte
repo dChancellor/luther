@@ -1,10 +1,22 @@
 <!-- TODO - refactor opportunity / stylesheet and add editable text?-->
 <script lang="ts">
 	import 'highlight.js/styles/github-dark.css';
-	import type { DataRow } from '$types/data';
 	import board from '$lib/assets/bulletin-board.svg';
+	import type { PageProps } from './$types';
+	import { invalidateAll } from '$app/navigation';
 
-	export let data: { rows: DataRow[]; primarySlug: string };
+	let { data }: PageProps = $props();
+
+	// svelte-ignore state_referenced_locally
+	let rows = $state(data.rows);
+
+	async function onDeleteClick(slug: string): Promise<void> {
+		rows = rows.filter((row) => row.slug !== slug);
+		await fetch(`/api/paste/${slug}`, {
+			method: 'DELETE'
+		});
+		await invalidateAll();
+	}
 </script>
 
 <svelte:head>
@@ -18,9 +30,12 @@
 	</header>
 
 	<div>
-		{#each data.rows as row (row.slug)}
+		{#each rows as row (row.slug)}
 			<div class="file">
-				<span>{row.slug} • lang: {row.language} • created at: {row.created_at}</span>
+				<div class="bar">
+					<span>{row.slug} • lang: {row.language} • created at: {row.created_at}</span>
+					<button class="delete" onclick={() => onDeleteClick(row.slug)}>delete</button>
+				</div>
 				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 				<pre><code>{@html row.content}</code></pre>
 			</div>
@@ -50,6 +65,11 @@
 		gap: 12px;
 		align-items: center;
 	}
+	.bar {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+	}
 	pre {
 		margin: 0;
 		padding: 20px;
@@ -62,5 +82,15 @@
 			monospace;
 		font-size: 14px;
 		white-space: pre;
+	}
+	button {
+		background-color: transparent;
+		border: none;
+		color: #f5bb34;
+		padding: 10px 15px;
+		cursor: pointer;
+		font-size: 1rem;
+		text-decoration: none; /* Often appears as plain text or a link */
+		display: inline-block;
 	}
 </style>

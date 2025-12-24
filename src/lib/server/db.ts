@@ -39,3 +39,17 @@ export async function getRows(slug: string): Promise<Row[] | null> {
 
 	return res.rows;
 }
+
+export async function deleteRow(slug: string): Promise<boolean> {
+	const res = await db.execute({
+		sql: `
+    UPDATE pastes
+    SET deleted_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+    WHERE slug = ?
+      AND deleted_at IS NULL
+  `,
+		args: [slug]
+	});
+
+	return (res.rowsAffected ?? 0) > 0;
+}

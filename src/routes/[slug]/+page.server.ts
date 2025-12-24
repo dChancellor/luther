@@ -29,5 +29,7 @@ export const load: PageServerLoad = async ({
 		row.content = highlighted;
 		rows.push(row);
 	}
+	if (!rows.find((row) => row.slug === params.slug)) throw error(404, 'Not found');
+
 	return { rows, primarySlug: params.slug };
 };
