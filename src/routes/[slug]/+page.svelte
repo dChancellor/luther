@@ -64,9 +64,14 @@
 	async function onSaveNewClick(): Promise<void> {
 		errorMessage = null;
 		try {
+			if (rows.length === 0) {
+				errorMessage = 'No pastes found on this page';
+				return;
+			}
+
 			const groupId = rows[0]?.group_id;
 			if (!groupId) {
-				errorMessage = 'No group ID found';
+				errorMessage = 'Unable to determine group for this paste';
 				return;
 			}
 
