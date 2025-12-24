@@ -6,7 +6,7 @@ import { db } from '$lib/server/db';
 import { generateSlug } from '$lib/server/slug';
 
 vi.mock('$lib/server/db', () => ({
-	db: { execute: vi.fn() }
+	db: { execute: vi.fn(), batch: vi.fn() }
 }));
 
 vi.mock('$lib/server/slug', () => ({
@@ -33,7 +33,7 @@ describe('POST /api/paste', () => {
 		const slug = 'test12';
 
 		vi.mocked(generateSlug).mockReturnValue(slug);
-		vi.mocked(db.execute).mockResolvedValue({} as any);
+		vi.mocked(db.batch).mockResolvedValue({} as any);
 
 		const request = new Request('https://example.com', {
 			method: 'POST',
@@ -49,10 +49,16 @@ describe('POST /api/paste', () => {
 		expect(response.status).toBe(201);
 		expect(data.slug).toBe(slug);
 		expect(data.url).toBe(`https://example.com/${slug}`);
-		expect(db.execute).toHaveBeenCalledWith(
-			expect.objectContaining({
-				args: [slug, text, 'typescript']
-			})
+		expect(db.batch).toHaveBeenCalledWith(
+			expect.arrayContaining([
+				expect.objectContaining({
+					sql: expect.stringContaining('INSERT INTO paste_groups')
+				}),
+				expect.objectContaining({
+					sql: expect.stringContaining('INSERT INTO pastes'),
+					args: expect.arrayContaining([slug, text, 'typescript'])
+				})
+			])
 		);
 	});
 
@@ -90,7 +96,7 @@ describe('POST /api/paste', () => {
 	it('retries if a slug collision occurs (UNIQUE constraint error)', async () => {
 		vi.mocked(generateSlug).mockReturnValue('collision');
 
-		vi.mocked(db.execute)
+		vi.mocked(db.batch)
 			.mockRejectedValueOnce(new Error('UNIQUE constraint failed'))
 			.mockResolvedValueOnce({} as any);
 
@@ -105,11 +111,11 @@ describe('POST /api/paste', () => {
 		const response = await POST({ request, url: mockUrl } as any);
 
 		expect(response.status).toBe(201);
-		expect(db.execute).toHaveBeenCalledTimes(2);
+		expect(db.batch).toHaveBeenCalledTimes(2);
 	});
 
 	it('returns 500 if all 5 slug attempts fail', async () => {
-		vi.mocked(db.execute).mockRejectedValue(new Error('UNIQUE constraint failed'));
+		vi.mocked(db.batch).mockRejectedValue(new Error('UNIQUE constraint failed'));
 
 		const request = new Request('https://example.com', {
 			method: 'POST',
@@ -122,6 +128,6 @@ describe('POST /api/paste', () => {
 		const response = await POST({ request, url: mockUrl } as any);
 
 		expect(response.status).toBe(500);
-		expect(db.execute).toHaveBeenCalledTimes(5);
+		expect(db.batch).toHaveBeenCalledTimes(5);
 	});
 });

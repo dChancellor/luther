@@ -6,17 +6,21 @@ import { dataRowSchema, type DataRow } from '$types/data';
 
 export const ssr = false;
 
+export type DisplayData = DataRow & { raw: string; normalizedDate: string };
+
 export const load: PageServerLoad = async ({
 	params
-}): Promise<{ rows: DataRow[]; primarySlug: string }> => {
+}): Promise<{ rows: DisplayData[]; primarySlug: string }> => {
 	const rawRows = await getRows(params.slug);
 
 	if (!rawRows) throw error(404, 'Not found');
 
-	const rows: DataRow[] = [];
+	const rows: DisplayData[] = [];
 
 	for (const rawRow of rawRows) {
 		const row = dataRowSchema.parse(rawRow);
+
+		const manipulatedRow: DisplayData = { ...row, raw: '', normalizedDate: '' };
 
 		const highlighted =
 			String(row.language) !== 'text'
@@ -25,9 +29,10 @@ export const load: PageServerLoad = async ({
 
 		const date = new Date(row.created_at);
 
-		row.created_at = date.toLocaleDateString();
-		row.content = highlighted;
-		rows.push(row);
+		manipulatedRow.normalizedDate = date.toLocaleDateString();
+		manipulatedRow.content = highlighted;
+		manipulatedRow.raw = row.content;
+		rows.push(manipulatedRow);
 	}
 	if (!rows.find((row) => row.slug === params.slug)) throw error(404, 'Not found');
 

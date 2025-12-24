@@ -40,6 +40,20 @@ export async function getRows(slug: string): Promise<Row[] | null> {
 	return res.rows;
 }
 
+export async function updateRow(slug: string, content: string): Promise<boolean> {
+	const res = await db.execute({
+		sql: `
+    UPDATE pastes
+    SET content = ?
+    WHERE slug = ?
+      AND deleted_at IS NULL
+  `,
+		args: [content, slug]
+	});
+
+	return (res.rowsAffected ?? 0) > 0;
+}
+
 export async function deleteRow(slug: string): Promise<boolean> {
 	const res = await db.execute({
 		sql: `
