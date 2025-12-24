@@ -3,6 +3,7 @@ import { db } from '$lib/server/db';
 import { generateSlug } from '$lib/server/slug';
 import { detectLanguage } from '$lib/server/detect-language';
 import { getErrorMessage } from '$lib/server/error';
+import { randomUUID } from 'crypto';
 
 const MAX_BYTES = 200_000;
 
@@ -24,14 +25,18 @@ export const POST: RequestHandler = async ({ request, url }) => {
 	}
 
 	const language = detectLanguage(text);
+	const groupId = randomUUID();
 
 	for (let i = 0; i < 5; i++) {
 		const slug = generateSlug(6);
 		try {
-			await db.execute({
-				sql: 'INSERT INTO pastes (slug, content, language) VALUES (?, ?, ?)',
-				args: [slug, text, language]
-			});
+			await db.batch([
+				{ sql: 'INSERT INTO paste_groups (id) VALUES (?)', args: [groupId] },
+				{
+					sql: 'INSERT INTO pastes (slug, content, language, group_id) VALUES (?, ?, ?, ?)',
+					args: [slug, text, language, groupId]
+				}
+			]);
 
 			const base = url.origin;
 			return new Response(
