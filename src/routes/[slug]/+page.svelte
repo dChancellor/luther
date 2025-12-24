@@ -11,6 +11,8 @@
 	let editingSlug = $state<string | null>(null);
 	let editContent = $state<string>('');
 	let errorMessage = $state<string | null>(null);
+	let isCreatingNew = $state<boolean>(false);
+	let newContent = $state<string>('');
 
 	async function onDeleteClick(slug: string): Promise<void> {
 		rows = rows.filter((row) => row.slug !== slug);
@@ -50,6 +52,51 @@
 	function onCancelClick(): void {
 		editingSlug = null;
 		editContent = '';
+		errorMessage = null;
+	}
+
+	function onNewClick(): void {
+		isCreatingNew = true;
+		errorMessage = null;
+		newContent = '';
+	}
+
+	async function onSaveNewClick(): Promise<void> {
+		errorMessage = null;
+		try {
+			const groupId = rows[0]?.group_id;
+			if (!groupId) {
+				errorMessage = 'No group ID found';
+				return;
+			}
+
+			const response = await fetch('/api/paste/group', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					text: newContent,
+					groupId
+				})
+			});
+
+			if (response.ok) {
+				isCreatingNew = false;
+				newContent = '';
+				await invalidateAll();
+			} else {
+				const data = await response.json();
+				errorMessage = data.error || 'Failed to create new paste';
+			}
+		} catch {
+			errorMessage = 'Failed to create new paste';
+		}
+	}
+
+	function onCancelNewClick(): void {
+		isCreatingNew = false;
+		newContent = '';
 		errorMessage = null;
 	}
 </script>
@@ -97,6 +144,29 @@
 				{/if}
 			</div>
 		{/each}
+
+		{#if isCreatingNew}
+			<div class="file">
+				<div class="bar">
+					<span>New paste</span>
+					<div>
+						<button class="tertiary" onclick={() => onSaveNewClick()}>save</button>
+						<button class="tertiary" onclick={() => onCancelNewClick()}>cancel</button>
+					</div>
+				</div>
+				<div class="edit-container">
+					<textarea bind:value={newContent} class="edit-textarea"></textarea>
+					<div class="edit-actions">
+						<button onclick={() => onSaveNewClick()}>save</button>
+						<button onclick={onCancelNewClick}>cancel</button>
+					</div>
+				</div>
+			</div>
+		{:else}
+			<div class="new-button-container">
+				<button class="new-button" onclick={onNewClick}>+ new</button>
+			</div>
+		{/if}
 	</div>
 </div>
 
@@ -180,5 +250,23 @@
 		margin-top: 12px;
 		display: flex;
 		gap: 8px;
+	}
+	.new-button-container {
+		margin: 2rem 0;
+		display: flex;
+		justify-content: center;
+	}
+	.new-button {
+		background-color: #49774c;
+		color: #a3f58d;
+		border: 1px solid #a3f58d;
+		padding: 12px 24px;
+		cursor: pointer;
+		font-size: 1rem;
+		border-radius: 4px;
+		transition: background-color 0.2s;
+	}
+	.new-button:hover {
+		background-color: #5a8a5d;
 	}
 </style>

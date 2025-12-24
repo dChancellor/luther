@@ -67,3 +67,23 @@ export async function deleteRow(slug: string): Promise<boolean> {
 
 	return (res.rowsAffected ?? 0) > 0;
 }
+
+export async function createRowInGroup(
+	slug: string,
+	content: string,
+	language: string,
+	groupId: string
+): Promise<boolean> {
+	try {
+		await db.execute({
+			sql: `
+      INSERT INTO pastes (slug, content, language, group_id)
+      VALUES (?, ?, ?, ?)
+    `,
+			args: [slug, content, language, groupId]
+		});
+		return true;
+	} catch {
+		return false;
+	}
+}
