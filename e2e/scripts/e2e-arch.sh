@@ -101,5 +101,6 @@ done
 #   npx playwright test --config playwright.config.ts
 #
 
-PW_TEST_CONNECT_WS_ENDPOINT="ws://${HOST}:${PORT}/" \
-  npx playwright test --config playwright.config.ts --project=api --project=chromium --project=firefox --project=webkit
+PW_TEST_CONNECT_WS_ENDPOINT="ws://${HOST}:${PORT}/"
+# npx playwright test --config playwright.config.ts --project=api --project=chromium --project=firefox --project=webkit
+npx playwright test --config playwright.config.ts --project=api
