@@ -11,6 +11,7 @@
 	let rows = $state(data.rows);
 	let editingSlug = $state<string | null>(null);
 	let editContent = $state<string>('');
+	let errorMessage = $state<string | null>(null);
 
 	async function onDeleteClick(slug: string): Promise<void> {
 		rows = rows.filter((row) => row.slug !== slug);
@@ -20,32 +21,49 @@
 		await invalidateAll();
 	}
 
-	function onEditClick(slug: string): void {
+	async function onEditClick(slug: string): Promise<void> {
 		editingSlug = slug;
+		errorMessage = null;
 		// We need to fetch the raw content, not the highlighted version
-		fetch(`/raw/${slug}`)
-			.then((res) => res.text())
-			.then((text) => {
-				editContent = text;
-			});
+		try {
+			const response = await fetch(`/raw/${slug}`);
+			if (!response.ok) {
+				errorMessage = 'Failed to load paste content';
+				editingSlug = null;
+				return;
+			}
+			editContent = await response.text();
+		} catch {
+			errorMessage = 'Failed to load paste content';
+			editingSlug = null;
+		}
 	}
 
 	async function onSaveClick(slug: string): Promise<void> {
-		const response = await fetch(`/api/paste/${slug}`, {
-			method: 'PUT',
-			body: editContent
-		});
+		errorMessage = null;
+		try {
+			const response = await fetch(`/api/paste/${slug}`, {
+				method: 'PUT',
+				body: editContent
+			});
 
-		if (response.ok) {
-			editingSlug = null;
-			editContent = '';
-			await invalidateAll();
+			if (response.ok) {
+				editingSlug = null;
+				editContent = '';
+				await invalidateAll();
+			} else {
+				const data = await response.json();
+				errorMessage = data.error || 'Failed to save changes';
+			}
+		} catch {
+			errorMessage = 'Failed to save changes';
 		}
 	}
 
 	function onCancelClick(): void {
 		editingSlug = null;
 		editContent = '';
+		errorMessage = null;
 	}
 </script>
 
@@ -58,6 +76,10 @@
 	<header class="hdr">
 		<div>{data.primarySlug}</div>
 	</header>
+
+	{#if errorMessage}
+		<div class="error-message">{errorMessage}</div>
+	{/if}
 
 	<div>
 		{#each rows as row (row.slug)}
@@ -135,6 +157,14 @@
 		font-size: 1rem;
 		text-decoration: none; /* Often appears as plain text or a link */
 		display: inline-block;
+	}
+	.error-message {
+		background-color: #8b2020;
+		color: #ffcccc;
+		padding: 12px 20px;
+		margin: 12px 0;
+		border-radius: 4px;
+		border-left: 4px solid #d32f2f;
 	}
 	.edit-container {
 		background: #49774c;
