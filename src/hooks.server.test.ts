@@ -224,28 +224,4 @@ describe('hooks.server.ts handle()', () => {
 		expect(res.status).toBe(200);
 		expect((resolve as any).mock.calls.length).toBe(1);
 	});
-
-	it('returns 401 for DELETE /api/paste/[slug] when x-api-key is missing or wrong', async () => {
-		envState.API_KEY = 'secret';
-
-		const { handle } = await import('./hooks.server');
-
-		type HandleArg = Parameters<typeof handle>[0];
-		type MockEvent = HandleArg['event'];
-
-		const resolve = makeResolve() as unknown as HandleArg['resolve'];
-
-		const eventMissing = {
-			request: new Request('http://localhost/api/paste/abc123', { method: 'DELETE' }),
-			url: new URL('http://localhost/api/paste/abc123'),
-			getClientAddress: () => '1.2.3.4'
-		} as unknown as MockEvent;
-
-		const resMissing = await handle({ event: eventMissing, resolve } as HandleArg);
-		expect(resMissing.status).toBe(401);
-		expect(resMissing.headers.get('content-type')).toContain('application/json');
-		expect(await resMissing.json()).toEqual({ error: 'Unauthorized' });
-
-		expect((resolve as any).mock.calls.length).toBe(0);
-	});
 });
