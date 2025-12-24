@@ -1,26 +1,33 @@
 import hljs from 'highlight.js';
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
-import { getRow } from '$lib/server/db';
+import { getRows } from '$lib/server/db';
 import { dataRowSchema, type DataRow } from '$types/data';
 
 export const ssr = false;
 
-export const load: PageServerLoad = async ({ params }): Promise<DataRow> => {
-	const rawRow = await getRow(params.slug);
-	if (!rawRow) throw error(404, 'Not found');
+export const load: PageServerLoad = async ({
+	params
+}): Promise<{ rows: DataRow[]; primarySlug: string }> => {
+	const rawRows = await getRows(params.slug);
 
-	const data: DataRow = dataRowSchema.parse(rawRow);
+	if (!rawRows) throw error(404, 'Not found');
 
-	const highlighted =
-		String(data.language) !== 'text'
-			? hljs.highlight(data.content, { language: data.language }).value
-			: hljs.highlight(data.content, { language: 'plaintext' }).value;
+	const rows: DataRow[] = [];
 
-	return {
-		slug: params.slug,
-		content: String(highlighted),
-		created_at: String(data.created_at),
-		language: String(data.language)
-	};
+	for (const rawRow of rawRows) {
+		const row = dataRowSchema.parse(rawRow);
+
+		const highlighted =
+			String(row.language) !== 'text'
+				? hljs.highlight(row.content, { language: row.language }).value
+				: hljs.highlight(row.content, { language: 'plaintext' }).value;
+
+		const date = new Date(row.created_at);
+
+		row.created_at = date.toLocaleDateString();
+		row.content = highlighted;
+		rows.push(row);
+	}
+	return { rows, primarySlug: params.slug };
 };

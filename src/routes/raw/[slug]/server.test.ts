@@ -23,7 +23,8 @@ describe('GET /api/[slug]', () => {
 			slug: 'test-slug',
 			content: 'Hello, this is a test paste!',
 			language: 'text',
-			created_at: '1'
+			created_at: '1',
+			length: 1
 		};
 
 		vi.mocked(getRow).mockResolvedValue(mockData);
@@ -55,7 +56,7 @@ describe('GET /api/[slug]', () => {
 	});
 
 	it('fails if the data does not match the schema', async () => {
-		vi.mocked(getRow).mockResolvedValue({ slug: 'bad-data' });
+		vi.mocked(getRow).mockResolvedValue({ slug: 'bad-data', length: 1 });
 
 		const params = { slug: 'bad-data' };
 

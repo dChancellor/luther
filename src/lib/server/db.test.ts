@@ -76,7 +76,7 @@ describe('db + getRow', () => {
 
 		const sql = String(callArg.sql).replace(/\s+/g, ' ').trim();
 		expect(sql).toContain(
-			'SELECT slug, content, created_at, language FROM pastes WHERE slug = ? AND deleted_at IS NULL'
+			'SELECT slug, content, created_at, language, group_id FROM pastes WHERE slug = ? AND deleted_at IS NULL'
 		);
 
 		expect(result).toEqual(fakeRow);

@@ -1,41 +1,46 @@
 <!-- TODO - refactor opportunity / stylesheet and add editable text?-->
 <script lang="ts">
-	/* eslint-disable svelte/no-at-html-tags */
 	import 'highlight.js/styles/github-dark.css';
-	import { resolve } from '$app/paths';
 	import type { DataRow } from '$types/data';
 	import board from '$lib/assets/bulletin-board.svg';
 
-	export let data: DataRow;
+	export let data: { rows: DataRow[]; primarySlug: string };
 </script>
 
 <svelte:head>
-	<title>Luther/{data.slug}</title>
+	<title>Luther/{data.primarySlug}</title>
 	<link rel="icon" href={board} />
 </svelte:head>
 
-<header class="hdr">
-	<div>
-		<div class="meta">
-			Created {data.created_at} • lang: {data.language} •
-			<a href={resolve('/raw/[slug]', { slug: data.slug })}>raw</a>
-		</div>
-		<div></div>
-	</div>
-</header>
+<div class="body">
+	<header class="hdr">
+		<div>{data.primarySlug}</div>
+	</header>
 
-<pre><code>{@html data.content}</code></pre>
+	<div>
+		{#each data.rows as row (row.slug)}
+			<div class="file">
+				<span>{row.slug} • lang: {row.language} • created at: {row.created_at}</span>
+				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+				<pre><code>{@html row.content}</code></pre>
+			</div>
+		{/each}
+	</div>
+</div>
 
 <style>
 	:global(body) {
 		margin: 0;
 		font-family: system-ui, sans-serif;
-		background: #0b0f17;
-		color: #e7eefc;
+		background: #33573e;
+		color: #a3f58d;
+		padding-inline: 2rem;
 	}
-	a {
-		color: #8ab4ff;
-		text-decoration: none;
+	pre {
+		background: #49774c;
+	}
+	.file {
+		margin-bottom: 2rem;
 	}
 	.hdr {
 		padding: 16px 20px;
@@ -44,10 +49,6 @@
 		justify-content: space-between;
 		gap: 12px;
 		align-items: center;
-	}
-	.meta {
-		opacity: 0.8;
-		font-size: 13px;
 	}
 	pre {
 		margin: 0;

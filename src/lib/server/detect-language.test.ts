@@ -9,7 +9,7 @@ describe('detectLanguage', () => {
 	});
 
 	it('returns detected language(typescript) when relevance is high enough', async () => {
-		const tsExamplePath = resolve(process.cwd(), 'example_inputs/ts.txt');
+		const tsExamplePath = resolve(process.cwd(), 'examples/example_inputs/ts.txt');
 		const tsExampleCode = await readFile(tsExamplePath, 'utf8');
 
 		const result = detectLanguage(tsExampleCode);
@@ -17,7 +17,7 @@ describe('detectLanguage', () => {
 	});
 
 	it('returns detected language(javascript) when relevance is high enough', async () => {
-		const jsExamplePath = resolve(process.cwd(), 'example_inputs/ts.txt');
+		const jsExamplePath = resolve(process.cwd(), 'examples/example_inputs/ts.txt');
 		const jsExampleCode = await readFile(jsExamplePath, 'utf8');
 
 		const result = detectLanguage(jsExampleCode);
