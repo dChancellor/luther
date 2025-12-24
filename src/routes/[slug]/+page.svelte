@@ -7,8 +7,7 @@
 
 	let { data }: PageProps = $props();
 
-	// svelte-ignore state_referenced_locally
-	let rows = $state(data.rows);
+	let rows = $derived(data.rows);
 	let editingSlug = $state<string | null>(null);
 	let editContent = $state<string>('');
 	let errorMessage = $state<string | null>(null);
@@ -21,22 +20,10 @@
 		await invalidateAll();
 	}
 
-	async function onEditClick(slug: string): Promise<void> {
+	async function onEditClick(slug: string, raw: string): Promise<void> {
 		editingSlug = slug;
 		errorMessage = null;
-		// We need to fetch the raw content, not the highlighted version
-		try {
-			const response = await fetch(`/raw/${slug}`);
-			if (!response.ok) {
-				errorMessage = 'Failed to load paste content';
-				editingSlug = null;
-				return;
-			}
-			editContent = await response.text();
-		} catch {
-			errorMessage = 'Failed to load paste content';
-			editingSlug = null;
-		}
+		editContent = raw;
 	}
 
 	async function onSaveClick(slug: string): Promise<void> {
@@ -87,8 +74,13 @@
 				<div class="bar">
 					<span>{row.slug} • lang: {row.language} • created at: {row.created_at}</span>
 					<div>
-						<button onclick={() => onEditClick(row.slug)}>edit</button>
-						<button class="delete" onclick={() => onDeleteClick(row.slug)}>delete</button>
+						{#if editingSlug === row.slug}
+							<button class="tertiary" onclick={() => onSaveClick(row.slug)}>save</button>
+							<button class="tertiary" onclick={() => onCancelClick()}>cancel</button>
+						{:else}
+							<button class="tertiary" onclick={() => onEditClick(row.slug, row.raw)}>edit</button>
+						{/if}
+						<button class="tertiary" onclick={() => onDeleteClick(row.slug)}>delete</button>
 					</div>
 				</div>
 				{#if editingSlug === row.slug}
@@ -148,7 +140,7 @@
 		font-size: 14px;
 		white-space: pre;
 	}
-	button {
+	.tertiary {
 		background-color: transparent;
 		border: none;
 		color: #f5bb34;
