@@ -29,6 +29,9 @@ vite.config.ts.timestamp-*
 local.db
 local.db-shm
 local.db-wal
+dev.db
+dev.db-shm
+dev.db-wal
 
 # Playwright
 /playwright-report/
