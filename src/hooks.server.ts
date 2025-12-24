@@ -50,7 +50,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	const now = Date.now();
 
-	if (event.request.method === 'POST' && event.url.pathname === '/api/paste') {
+	const isApiPasteWrite =
+		(event.request.method === 'POST' && event.url.pathname === '/api/paste') ||
+		(event.request.method === 'POST' && event.url.pathname === '/api/pastes') ||
+		(event.request.method === 'DELETE' && event.url.pathname.startsWith('/api/paste/'));
+
+	if (isApiPasteWrite) {
 		const expectedKey = env.API_KEY;
 
 		if (!expectedKey) {

@@ -90,4 +90,34 @@ describe('db + getRow', () => {
 		const result = await mod.getRow('missing');
 		expect(result).toBeUndefined();
 	});
+
+	it('deleteRow soft deletes a paste by setting deleted_at', async () => {
+		const mod = await importFreshDb();
+
+		executeMock.mockResolvedValueOnce({ rowsAffected: 1 });
+
+		const result = await mod.deleteRow('abc123');
+
+		expect(executeMock).toHaveBeenCalledTimes(1);
+
+		const callArg = executeMock.mock.calls[0]?.[0];
+		expect(callArg.args).toEqual(['abc123']);
+
+		const sql = String(callArg.sql).replace(/\s+/g, ' ').trim();
+		expect(sql).toContain('UPDATE pastes');
+		expect(sql).toContain('SET deleted_at');
+		expect(sql).toContain('WHERE slug = ?');
+		expect(sql).toContain('AND deleted_at IS NULL');
+
+		expect(result).toBe(true);
+	});
+
+	it('deleteRow returns false when no rows are affected', async () => {
+		const mod = await importFreshDb();
+
+		executeMock.mockResolvedValueOnce({ rowsAffected: 0 });
+
+		const result = await mod.deleteRow('nonexistent');
+		expect(result).toBe(false);
+	});
 });
