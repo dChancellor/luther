@@ -1,28 +1,16 @@
 import type { RequestHandler } from './$types';
 import { deleteRow, updateRow } from '$lib/server/db';
 import { error } from '@sveltejs/kit';
-
-const MAX_BYTES = 200_000;
+import { isValidText } from '$lib/server/middlewares/valid-text';
 
 export const PUT: RequestHandler = async ({ params, request }) => {
-	const { slug } = params;
+	console.log('PUTTING');
 	const content = await request.text();
 
-	if (!content.trim()) {
-		return new Response(JSON.stringify({ error: 'Content must be non-empty text.' }), {
-			status: 400,
-			headers: { 'content-type': 'application/json' }
-		});
-	}
+	const res = isValidText(content);
+	if (!res.valid) return res.response;
 
-	if (Buffer.byteLength(content, 'utf8') > MAX_BYTES) {
-		return new Response(JSON.stringify({ error: `Paste too large (max ${MAX_BYTES} bytes).` }), {
-			status: 413,
-			headers: { 'content-type': 'application/json' }
-		});
-	}
-
-	const updated = await updateRow(slug, content);
+	const updated = await updateRow(params.slug, content);
 
 	if (!updated) {
 		error(404, 'Paste not found');

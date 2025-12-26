@@ -1,6 +1,7 @@
-// TODO - refactor opportunity - reuse things from other tests
+// TODO: refactor opportunity - reuse things from other tests
+//
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { GET } from './+server';
 import { getRow } from '$lib/server/db';
 import { error } from '@sveltejs/kit';
@@ -14,10 +15,6 @@ vi.mock('@sveltejs/kit', () => ({
 }));
 
 describe('GET /api/[slug]', () => {
-	beforeEach(() => {
-		vi.clearAllMocks();
-	});
-
 	it('returns the content as text/plain on success', async () => {
 		const mockData = {
 			slug: 'test-slug',

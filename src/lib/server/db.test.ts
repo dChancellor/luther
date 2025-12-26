@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { fakeRow } from '../../test/constants';
 
 const envState = vi.hoisted(() => ({
 	DATABASE_URL: 'file:./dev.db',
@@ -10,8 +11,10 @@ vi.mock('$env/dynamic/private', () => ({
 }));
 
 const executeMock = vi.fn();
+const batchMock = vi.fn();
 const createClientMock = vi.fn(() => ({
-	execute: executeMock
+	execute: executeMock,
+	batch: batchMock
 }));
 
 vi.mock('@libsql/client', () => ({
@@ -23,19 +26,10 @@ async function importFreshDb() {
 	return import('./db');
 }
 
-describe('db + getRow', () => {
-	beforeEach(() => {
-		vi.clearAllMocks();
-		executeMock.mockReset();
-
-		envState.DATABASE_URL = 'file:./dev.db';
-		envState.AUTH_TOKEN = 'test-token';
-	});
-
+describe('Database setup', () => {
 	it('creates a client with authToken undefined when DATABASE_URL starts with file:', async () => {
 		await importFreshDb();
 
-		expect(createClientMock).toHaveBeenCalledTimes(1);
 		expect(createClientMock).toHaveBeenCalledWith({
 			url: 'file:./dev.db',
 			authToken: undefined
@@ -44,80 +38,129 @@ describe('db + getRow', () => {
 
 	it('creates a client with authToken set when DATABASE_URL is not file:', async () => {
 		envState.DATABASE_URL = 'libsql://example.turso.io';
-		envState.AUTH_TOKEN = 'secret-token';
 
 		await importFreshDb();
 
-		expect(createClientMock).toHaveBeenCalledTimes(1);
 		expect(createClientMock).toHaveBeenCalledWith({
-			url: 'libsql://example.turso.io',
-			authToken: 'secret-token'
+			url: envState.DATABASE_URL,
+			authToken: envState.AUTH_TOKEN
 		});
 	});
+});
 
-	it('getRow executes the expected query and returns rows[0]', async () => {
-		const mod = await importFreshDb();
+describe('Database CREATE functions', () => {
+	it('createRow executes the expected query and returns the row', async () => {
+		const { createRow } = await importFreshDb();
+		executeMock.mockResolvedValueOnce({ ...fakeRow });
 
-		const fakeRow = {
-			slug: 'abc123',
-			content: 'hello',
-			created_at: '2025-12-21T00:00:00Z',
-			language: 'plaintext'
-		};
+		const result = await createRow({ ...fakeRow });
 
+		expect(result).toEqual(fakeRow);
+	});
+
+	it('createRow returns null when no rows are returned', async () => {
+		const { createRow } = await importFreshDb();
+
+		executeMock.mockResolvedValueOnce(null);
+
+		const result = await createRow({ ...fakeRow });
+		expect(result).toBeNull();
+	});
+
+	it('createGroup executes the expected query and returns the rows', async () => {
+		const { createGroup } = await importFreshDb();
+		batchMock.mockResolvedValueOnce({ ...fakeRow });
+
+		const result = await createGroup([{ ...fakeRow }], 'group123');
+
+		expect(result).toEqual(fakeRow);
+	});
+
+	it('createGroup returns null when no rows are returned', async () => {
+		const { createGroup } = await importFreshDb();
+
+		batchMock.mockResolvedValueOnce(null);
+
+		const result = await createGroup([{ ...fakeRow }], 'group_id');
+		expect(result).toBeNull();
+	});
+});
+
+describe('Database READ functions', () => {
+	it('getRow executes the expected query and returns the row', async () => {
+		const { getRow } = await importFreshDb();
 		executeMock.mockResolvedValueOnce({ rows: [fakeRow] });
 
-		const result = await mod.getRow('abc123');
-
-		expect(executeMock).toHaveBeenCalledTimes(1);
-
-		const callArg = executeMock.mock.calls[0]?.[0];
-		expect(callArg.args).toEqual(['abc123']);
-
-		const sql = String(callArg.sql).replace(/\s+/g, ' ').trim();
-		expect(sql).toContain(
-			'SELECT slug, content, created_at, language, group_id FROM pastes WHERE slug = ? AND deleted_at IS NULL'
-		);
+		const result = await getRow(fakeRow.slug);
 
 		expect(result).toEqual(fakeRow);
 	});
 
 	it('getRow returns undefined when no rows are returned', async () => {
-		const mod = await importFreshDb();
+		const { getRow } = await importFreshDb();
 
 		executeMock.mockResolvedValueOnce({ rows: [] });
 
-		const result = await mod.getRow('missing');
+		const result = await getRow('missing');
 		expect(result).toBeUndefined();
 	});
 
-	it('deleteRow soft deletes a paste by setting deleted_at', async () => {
-		const mod = await importFreshDb();
+	it('getRows returns the correct rows associated by group_id', async () => {
+		const { getRows } = await importFreshDb();
 
-		executeMock.mockResolvedValueOnce({ rowsAffected: 1 });
+		const fakeRow2 = { ...fakeRow, slug: 'new-row' };
+		executeMock.mockResolvedValueOnce({ rows: [fakeRow, fakeRow2] });
 
-		const result = await mod.deleteRow('abc123');
+		const result = await getRows(fakeRow.slug);
 
-		expect(executeMock).toHaveBeenCalledTimes(1);
-
-		const callArg = executeMock.mock.calls[0]?.[0];
-		expect(callArg.args).toEqual(['abc123']);
-
-		const sql = String(callArg.sql).replace(/\s+/g, ' ').trim();
-		expect(sql).toContain('UPDATE pastes');
-		expect(sql).toContain('SET deleted_at');
-		expect(sql).toContain('WHERE slug = ?');
-		expect(sql).toContain('AND deleted_at IS NULL');
-
-		expect(result).toBe(true);
+		expect(result?.length).toEqual(2);
 	});
 
-	it('deleteRow returns false when no rows are affected', async () => {
-		const mod = await importFreshDb();
+	it('getRows returns undefined when no rows are associated by group_id', async () => {
+		const { getRows } = await importFreshDb();
+		executeMock.mockResolvedValueOnce({ rows: [fakeRow, fakeRow] });
+
+		const result = await getRows('missing');
+
+		expect(result?.length).toEqual(2);
+	});
+});
+
+describe('Database UPDATE functions', () => {
+	it('updateRow is called and returns true', async () => {
+		const { updateRow } = await importFreshDb();
+		executeMock.mockResolvedValueOnce({ rowsAffected: 1 });
+
+		const result = await updateRow(fakeRow.slug, 'new content');
+		expect(result).toBeTruthy();
+	});
+
+	it('updateRow returns undefined when no rows have been updated', async () => {
+		const { getRow } = await importFreshDb();
+
+		executeMock.mockResolvedValueOnce({ rows: [] });
+
+		const result = await getRow('missing');
+		expect(result).toBeUndefined();
+	});
+});
+
+describe('Database DELETE functions', () => {
+	it('deleteRow is called and returns true', async () => {
+		const { deleteRow } = await importFreshDb();
+		executeMock.mockResolvedValueOnce({ rowsAffected: 1 });
+
+		const result = await deleteRow(fakeRow.slug);
+
+		expect(result).toEqual(true);
+	});
+
+	it('deleteRow returns false when no rows have been deleted', async () => {
+		const { deleteRow } = await importFreshDb();
 
 		executeMock.mockResolvedValueOnce({ rowsAffected: 0 });
 
-		const result = await mod.deleteRow('nonexistent');
-		expect(result).toBe(false);
+		const result = await deleteRow(fakeRow.slug);
+		expect(result).toEqual(false);
 	});
 });

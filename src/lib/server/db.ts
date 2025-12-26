@@ -1,5 +1,6 @@
-import { createClient, type Row } from '@libsql/client';
+import { createClient, type ResultSet, type Row } from '@libsql/client';
 import { env } from '$env/dynamic/private';
+import type { InsertPacket } from '$types/data';
 
 const DATABASE_URL = env.DATABASE_URL ?? '';
 const AUTH_TOKEN = env.AUTH_TOKEN ?? '';
@@ -51,7 +52,8 @@ export async function updateRow(slug: string, content: string): Promise<boolean>
 		args: [content, slug]
 	});
 
-	return (res.rowsAffected ?? 0) > 0;
+	console.log('res', res);
+	return res.rowsAffected > 0 ? true : false;
 }
 
 export async function deleteRow(slug: string): Promise<boolean> {
@@ -66,4 +68,34 @@ export async function deleteRow(slug: string): Promise<boolean> {
 	});
 
 	return (res.rowsAffected ?? 0) > 0;
+}
+
+export async function createRow({
+	slug,
+	content,
+	language,
+	groupId
+}: InsertPacket): Promise<ResultSet | null> {
+	const row = await db.execute({
+		sql: `
+      INSERT INTO pastes (slug, content, language, group_id)
+      VALUES (?, ?, ?, ?)
+    `,
+		args: [slug, content, language, groupId]
+	});
+	return row;
+}
+
+export async function createGroup(
+	packets: InsertPacket[],
+	groupId: string
+): Promise<ResultSet[] | null> {
+	const rows = await db.batch([
+		{ sql: 'INSERT OR IGNORE INTO paste_groups (id) VALUES (?)', args: [groupId] },
+		...packets.map((packet) => ({
+			sql: 'INSERT INTO pastes (slug, content, language, group_id) VALUES (?, ?, ?, ?)',
+			args: [packet.slug, packet.content, packet.language, groupId]
+		}))
+	]);
+	return rows;
 }
