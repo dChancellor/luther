@@ -53,7 +53,7 @@ function splitStatements(sql: string): string[] {
 	return out;
 }
 
-const migrationsDir = join(process.cwd(), 'migrations');
+const migrationsDir = join(process.cwd(), 'dev/migrations');
 const files = readdirSync(migrationsDir)
 	.filter((f) => f.endsWith('.sql'))
 	.sort();
