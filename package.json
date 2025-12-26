@@ -15,7 +15,7 @@
 		"lint": "prettier --check . && eslint .",
 		"test:unit": "vitest -- --verbose",
 		"test": "npm run test:unit -- --run",
-		"migrate": "tsx scripts/migrate.ts",
+		"migrate": "tsx dev/scripts/migrate.ts",
 		"e2e": "playwright test",
 		"e2e:ui": "playwright test --ui",
 		"e2e:debug": "playwright test --debug",
