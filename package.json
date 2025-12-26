@@ -13,7 +13,7 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
-		"test:unit": "vitest",
+		"test:unit": "vitest -- --verbose",
 		"test": "npm run test:unit -- --run",
 		"migrate": "tsx scripts/migrate.ts",
 		"e2e": "playwright test",
@@ -22,7 +22,9 @@
 		"e2e:report": "playwright show-report",
 		"e2e:arch": "./e2e/scripts/e2e-arch.sh",
 		"e2e:arch:setup": "sudo docker run -p 3000:3000 --rm --init -it mcr.microsoft.com/playwright:v1.57.0-jammy /bin/sh -c 'cd /home/pwuser && npx -y playwright@1.57.0 run-server --port 3000 --host 0.0.0.0'",
-		"e2e:arch:test": "PW_TEST_CONNECT_WS_ENDPOINT=ws://127.0.0.1:3000/ npx playwright test"
+		"e2e:arch:test": "PW_TEST_CONNECT_WS_ENDPOINT=ws://127.0.0.1:3000/ npx playwright test",
+		"hurl:single": "hurl ./dev/examples/hurl/js.hurl",
+		"hurl:mult": "hurl ./dev/examples/hurl/mult.hurl"
 	},
 	"lint-staged": {
 		"*.{js,ts,svelte}": [

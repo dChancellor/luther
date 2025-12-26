@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 import { base64Url, generateSlug } from './slug';
 
@@ -29,11 +29,6 @@ describe('base64Url', () => {
 });
 
 describe('generateSlug', () => {
-	beforeEach(() => {
-		vi.resetModules();
-		vi.clearAllMocks();
-	});
-
 	it('uses randomBytes(6) by default and returns base64Url(randomBytes)', async () => {
 		const slug = generateSlug();
 

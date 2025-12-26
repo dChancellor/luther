@@ -70,7 +70,7 @@ test.describe('POST /api/paste', () => {
 	});
 
 	test('rejects MAX_BYTES+1', async ({ request }) => {
-		const overPath = resolve('examples/example_inputs/test-200001.txt');
+		const overPath = resolve('dev/examples/example_inputs/test-200001.txt');
 
 		const over = readFileSync(overPath);
 		const tooBigRes = await request.post('/api/paste', {
@@ -139,7 +139,7 @@ test.describe('Paste retrieval', () => {
 });
 
 test.describe('Language detection (optional)', () => {
-	const jsTextFile = resolve('examples/example_inputs/js.txt');
+	const jsTextFile = resolve('dev/examples/example_inputs/js.txt');
 
 	const jsText = readFileSync(jsTextFile);
 

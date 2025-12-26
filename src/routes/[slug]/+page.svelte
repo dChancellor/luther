@@ -1,7 +1,6 @@
-<!-- TODO - refactor opportunity / stylesheet and add editable text?-->
+<!-- TODO: refactor opportunity / stylesheet -->
 <script lang="ts">
 	import 'highlight.js/styles/github-dark.css';
-	import board from '$lib/assets/bulletin-board.svg';
 	import type { PageProps } from './$types';
 	import { invalidateAll } from '$app/navigation';
 
@@ -75,13 +74,13 @@
 				return;
 			}
 
-			const response = await fetch('/api/paste/group', {
+			const response = await fetch('/api/paste', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify({
-					text: newContent,
+					content: newContent,
 					groupId
 				})
 			});
@@ -108,7 +107,6 @@
 
 <svelte:head>
 	<title>Luther/{data.primarySlug}</title>
-	<link rel="icon" href={board} />
 </svelte:head>
 
 <div class="body">

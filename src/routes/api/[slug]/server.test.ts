@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { DELETE } from './+server';
 import { deleteRow } from '$lib/server/db';
 
@@ -8,10 +8,6 @@ vi.mock('$lib/server/db', () => ({
 }));
 
 describe('DELETE /api/paste/[slug]', () => {
-	beforeEach(() => {
-		vi.clearAllMocks();
-	});
-
 	it('returns 200 and success true when paste is deleted', async () => {
 		vi.mocked(deleteRow).mockResolvedValue(true);
 
