@@ -16,7 +16,6 @@ function withOriginHeaders(extra?: Record<string, string>) {
 
 test.describe('DELETE /api/paste/[slug]', () => {
 	test('deletes a paste successfully', async ({ request }) => {
-		// First, create a paste
 		const createRes = await request.post('/api/paste', {
 			headers: withOriginHeaders(),
 			data: 'test paste for deletion'
@@ -26,12 +25,10 @@ test.describe('DELETE /api/paste/[slug]', () => {
 		const createJson = await createRes.json();
 		const slug = createJson.slug;
 
-		// Verify the paste exists
 		const getRes = await request.get(`/raw/${slug}`);
 		expect(getRes.ok()).toBeTruthy();
 
-		// Delete the paste
-		const deleteRes = await request.delete(`/api/paste/${slug}`, {
+		const deleteRes = await request.delete(`/api/${slug}`, {
 			headers: withOriginHeaders()
 		});
 
@@ -39,7 +36,6 @@ test.describe('DELETE /api/paste/[slug]', () => {
 		const deleteJson = await deleteRes.json();
 		expect(deleteJson.success).toBe(true);
 
-		// Verify the paste is no longer accessible
 		const getAfterDeleteRes = await request.get(`/raw/${slug}`);
 		expect(getAfterDeleteRes.status()).toBe(404);
 	});
@@ -53,7 +49,6 @@ test.describe('DELETE /api/paste/[slug]', () => {
 	});
 
 	test('returns 404 when deleting already deleted paste', async ({ request }) => {
-		// Create a paste
 		const createRes = await request.post('/api/paste', {
 			headers: withOriginHeaders(),
 			data: 'test paste for double deletion'
@@ -63,15 +58,13 @@ test.describe('DELETE /api/paste/[slug]', () => {
 		const createJson = await createRes.json();
 		const slug = createJson.slug;
 
-		// Delete it once
-		const firstDeleteRes = await request.delete(`/api/paste/${slug}`, {
+		const firstDeleteRes = await request.delete(`/api/${slug}`, {
 			headers: withOriginHeaders()
 		});
 
 		expect(firstDeleteRes.ok()).toBeTruthy();
 
-		// Try to delete it again
-		const secondDeleteRes = await request.delete(`/api/paste/${slug}`, {
+		const secondDeleteRes = await request.delete(`/api/${slug}`, {
 			headers: withOriginHeaders()
 		});
 

@@ -41,7 +41,7 @@ export async function getRows(slug: string): Promise<Row[] | null> {
 	return res.rows;
 }
 
-export async function updateRow(slug: string, content: string): Promise<Row[] | null> {
+export async function updateRow(slug: string, content: string): Promise<boolean> {
 	const res = await db.execute({
 		sql: `
     UPDATE pastes
@@ -52,7 +52,8 @@ export async function updateRow(slug: string, content: string): Promise<Row[] | 
 		args: [content, slug]
 	});
 
-	return res.rows;
+	console.log('res', res);
+	return res.rowsAffected > 0 ? true : false;
 }
 
 export async function deleteRow(slug: string): Promise<boolean> {

@@ -16,7 +16,6 @@ function withOriginHeaders(extra?: Record<string, string>) {
 
 test.describe('PUT /api/paste/[slug]', () => {
 	test('updates a paste successfully', async ({ request }) => {
-		// First, create a paste
 		const originalContent = 'original paste content';
 		const createRes = await request.post('/api/paste', {
 			headers: withOriginHeaders(),
@@ -27,15 +26,13 @@ test.describe('PUT /api/paste/[slug]', () => {
 		const createJson = await createRes.json();
 		const slug = createJson.slug;
 
-		// Verify the original content
 		const getRes = await request.get(`/raw/${slug}`);
 		expect(getRes.ok()).toBeTruthy();
 		const originalText = await getRes.text();
 		expect(originalText).toBe(originalContent);
 
-		// Update the paste
 		const updatedContent = 'updated paste content';
-		const updateRes = await request.put(`/api/paste/${slug}`, {
+		const updateRes = await request.put(`/api/${slug}`, {
 			headers: withOriginHeaders(),
 			data: updatedContent
 		});
@@ -44,7 +41,6 @@ test.describe('PUT /api/paste/[slug]', () => {
 		const updateJson = await updateRes.json();
 		expect(updateJson.success).toBe(true);
 
-		// Verify the paste was updated
 		const getAfterUpdateRes = await request.get(`/raw/${slug}`);
 		expect(getAfterUpdateRes.ok()).toBeTruthy();
 		const updatedText = await getAfterUpdateRes.text();
@@ -61,7 +57,6 @@ test.describe('PUT /api/paste/[slug]', () => {
 	});
 
 	test('returns 404 when updating deleted paste', async ({ request }) => {
-		// Create a paste
 		const createRes = await request.post('/api/paste', {
 			headers: withOriginHeaders(),
 			data: 'paste to be deleted'
@@ -71,15 +66,13 @@ test.describe('PUT /api/paste/[slug]', () => {
 		const createJson = await createRes.json();
 		const slug = createJson.slug;
 
-		// Delete the paste
-		const deleteRes = await request.delete(`/api/paste/${slug}`, {
+		const deleteRes = await request.delete(`/api/${slug}`, {
 			headers: withOriginHeaders()
 		});
 
 		expect(deleteRes.ok()).toBeTruthy();
 
-		// Try to update the deleted paste
-		const updateRes = await request.put(`/api/paste/${slug}`, {
+		const updateRes = await request.put(`/api/${slug}`, {
 			headers: withOriginHeaders(),
 			data: 'new content'
 		});
@@ -88,7 +81,6 @@ test.describe('PUT /api/paste/[slug]', () => {
 	});
 
 	test('returns 400 when updating with empty content', async ({ request }) => {
-		// Create a paste
 		const createRes = await request.post('/api/paste', {
 			headers: withOriginHeaders(),
 			data: 'original content'
@@ -98,8 +90,7 @@ test.describe('PUT /api/paste/[slug]', () => {
 		const createJson = await createRes.json();
 		const slug = createJson.slug;
 
-		// Try to update with empty content
-		const updateRes = await request.put(`/api/paste/${slug}`, {
+		const updateRes = await request.put(`/api/${slug}`, {
 			headers: withOriginHeaders(),
 			data: '   '
 		});
@@ -110,7 +101,6 @@ test.describe('PUT /api/paste/[slug]', () => {
 	});
 
 	test('can update paste multiple times', async ({ request }) => {
-		// Create a paste
 		const createRes = await request.post('/api/paste', {
 			headers: withOriginHeaders(),
 			data: 'version 1'
@@ -120,23 +110,20 @@ test.describe('PUT /api/paste/[slug]', () => {
 		const createJson = await createRes.json();
 		const slug = createJson.slug;
 
-		// First update
-		const update1Res = await request.put(`/api/paste/${slug}`, {
+		const update1Res = await request.put(`/api/${slug}`, {
 			headers: withOriginHeaders(),
 			data: 'version 2'
 		});
 
 		expect(update1Res.ok()).toBeTruthy();
 
-		// Second update
-		const update2Res = await request.put(`/api/paste/${slug}`, {
+		const update2Res = await request.put(`/api/${slug}`, {
 			headers: withOriginHeaders(),
 			data: 'version 3'
 		});
 
 		expect(update2Res.ok()).toBeTruthy();
 
-		// Verify final content
 		const getRawRes = await request.get(`/raw/${slug}`);
 		const finalText = await getRawRes.text();
 		expect(finalText).toBe('version 3');

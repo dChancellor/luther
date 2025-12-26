@@ -4,6 +4,7 @@ import { error } from '@sveltejs/kit';
 import { isValidText } from '$lib/server/middlewares/valid-text';
 
 export const PUT: RequestHandler = async ({ params, request }) => {
+	console.log('PUTTING');
 	const content = await request.text();
 
 	const res = isValidText(content);

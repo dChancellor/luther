@@ -127,13 +127,12 @@ describe('Database READ functions', () => {
 });
 
 describe('Database UPDATE functions', () => {
-	it('updateRow is called and returns the new row', async () => {
+	it('updateRow is called and returns true', async () => {
 		const { updateRow } = await importFreshDb();
-		executeMock.mockResolvedValueOnce({ rows: { ...fakeRow, content: 'new content' } });
+		executeMock.mockResolvedValueOnce({ rowsAffected: 1 });
 
 		const result = await updateRow(fakeRow.slug, 'new content');
-
-		expect(result).toEqual({ ...fakeRow, content: 'new content' });
+		expect(result).toBeTruthy();
 	});
 
 	it('updateRow returns undefined when no rows have been updated', async () => {

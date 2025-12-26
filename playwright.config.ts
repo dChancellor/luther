@@ -37,7 +37,7 @@ export default defineConfig({
 		// 	retries: 2
 		// },
 		//
-		// { name: 'api', use: { baseURL }, testMatch: /api\/.*\.spec\.ts/, workers: 1, retries: 2 }
+		{ name: 'api', use: { baseURL }, testMatch: /api\/.*\.spec\.ts/, workers: 1 }
 	],
 	webServer: {
 		command: 'npm run build && npm run preview -- --port 4173 --host 0.0.0.0',
