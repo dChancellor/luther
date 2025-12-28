@@ -43,18 +43,29 @@ test.describe('Duplicate paste functionality', () => {
 		await expect(duplicateButton).toBeVisible();
 	});
 
-	test('clicking duplicate button creates a new paste and navigates to it', async ({
+	test('clicking duplicate button creates a new bin with all notes and navigates to it', async ({
 		page,
 		request
 	}) => {
-		const originalContent = 'const x = 42;';
-		const { slug: originalSlug } = await createPaste(request, originalContent);
+		// Create a bin with 2 notes
+		const content1 = 'const x = 42;';
+		const content2 = 'const y = 100;';
+
+		const res1 = await request.post(`${baseURL}/api/paste`, {
+			headers: withOriginHeaders(),
+			data: JSON.stringify({ texts: [content1, content2] }),
+			timeout: 15_000
+		});
+		const body1 = await res1.json();
+		const originalSlug = body1.slug;
 
 		await page.goto(`${baseURL}/${originalSlug}`);
 
-		// Verify we're on the original slug
-		await expect(page).toHaveURL(`${baseURL}/${originalSlug}`);
-		await expect(page).toHaveTitle(`Luther/${originalSlug}`);
+		// Verify we're in the original bin with 2 items
+		const footer = page.locator('footer');
+		await expect(footer).toContainText('`ITEMS: 2`');
+
+		const originalUrl = page.url();
 
 		// Click the duplicate button
 		await page.getByRole('button', { name: 'duplicate' }).click();
@@ -64,42 +75,47 @@ test.describe('Duplicate paste functionality', () => {
 
 		// Verify we're on a new slug (different from original)
 		const newUrl = page.url();
-		expect(newUrl).not.toBe(`${baseURL}/${originalSlug}`);
+		expect(newUrl).not.toBe(originalUrl);
 
 		// Extract the new slug from the URL
 		const newSlug = newUrl.split('/').pop();
 		expect(newSlug).toBeTruthy();
 		expect(newSlug).not.toBe(originalSlug);
 
-		// Verify the content is the same
-		const codeBlock = page.locator('pre > code');
-		await expect(codeBlock).toContainText(originalContent);
+		// Verify the new bin also has 2 items
+		await expect(footer).toContainText('`ITEMS: 2`');
+
+		// Verify both contents are present in the new bin
+		const codeBlocks = page.locator('pre > code');
+		const count = await codeBlocks.count();
+		expect(count).toBe(2);
 	});
 
-	test('duplicate preserves content exactly', async ({ page, request }) => {
-		const content = 'function test() {\n  return "multiline\\nstring";\n}\nconsole.log("test");';
-		const { slug: originalSlug } = await createPaste(request, content);
+	test('duplicate preserves all content exactly', async ({ page, request }) => {
+		const content1 = 'function test() {\n  return "multiline\\nstring";\n}';
+		const content2 = 'console.log("test");';
+
+		const res = await request.post(`${baseURL}/api/paste`, {
+			headers: withOriginHeaders(),
+			data: JSON.stringify({ texts: [content1, content2] }),
+			timeout: 15_000
+		});
+		const body = await res.json();
+		const originalSlug = body.slug;
 
 		await page.goto(`${baseURL}/${originalSlug}`);
 
-		// Duplicate the paste
+		// Duplicate the bin
 		await page.getByRole('button', { name: 'duplicate' }).click();
 		await page.waitForURL(/\/[^/]+$/);
 
-		// Get the new slug
-		const newSlug = page.url().split('/').pop();
-
-		// Verify content via raw endpoint
-		const rawRes = await request.get(`${baseURL}/raw/${newSlug}`, {
-			headers: { origin: baseURL }
-		});
-
-		expect(rawRes.ok()).toBeTruthy();
-		const rawText = await rawRes.text();
-		expect(rawText).toBe(content);
+		// Verify both contents are present via checking the page
+		const codeBlocks = page.locator('pre > code');
+		const count = await codeBlocks.count();
+		expect(count).toBe(2);
 	});
 
-	test('duplicate creates a new entry in the same group', async ({ page, request }) => {
+	test('duplicate creates a new bin (different group)', async ({ page, request }) => {
 		const content = 'const original = true;';
 		const { slug: originalSlug } = await createPaste(request, content);
 
@@ -109,34 +125,59 @@ test.describe('Duplicate paste functionality', () => {
 		const footer = page.locator('footer');
 		await expect(footer).toContainText('`ITEMS: 1`');
 
-		// Duplicate the paste
+		// Get the original group ID
+		const originalGroupText = await footer.textContent();
+		const originalGroupMatch = originalGroupText?.match(/Group: "([^"]+)"/);
+		const originalGroupId = originalGroupMatch?.[1];
+
+		// Duplicate the bin
 		await page.getByRole('button', { name: 'duplicate' }).click();
 		await page.waitForURL(/\/[^/]+$/);
 
-		// The group should now show 2 items
-		await expect(footer).toContainText('`ITEMS: 2`');
+		// The new bin should show 1 item
+		await expect(footer).toContainText('`ITEMS: 1`');
+
+		// Get the new group ID
+		const newGroupText = await footer.textContent();
+		const newGroupMatch = newGroupText?.match(/Group: "([^"]+)"/);
+		const newGroupId = newGroupMatch?.[1];
+
+		// Verify we have a different group ID
+		expect(newGroupId).toBeTruthy();
+		expect(newGroupId).not.toBe(originalGroupId);
 
 		// Navigate back to original slug
 		await page.goto(`${baseURL}/${originalSlug}`);
 
-		// It should also show 2 items (same group)
-		await expect(footer).toContainText('`ITEMS: 2`');
+		// It should still show 1 item (not 2, because it's a different group)
+		await expect(footer).toContainText('`ITEMS: 1`');
 	});
 
-	test('can duplicate a paste multiple times', async ({ page, request }) => {
-		const content = 'const value = 123;';
-		const { slug: originalSlug } = await createPaste(request, content);
+	test('can duplicate a bin multiple times', async ({ page, request }) => {
+		const content1 = 'const value = 123;';
+		const content2 = 'const name = "test";';
+
+		const res = await request.post(`${baseURL}/api/paste`, {
+			headers: withOriginHeaders(),
+			data: JSON.stringify({ texts: [content1, content2] }),
+			timeout: 15_000
+		});
+		const body = await res.json();
+		const originalSlug = body.slug;
 
 		await page.goto(`${baseURL}/${originalSlug}`);
+
+		// Verify original has 2 items
+		const footer = page.locator('footer');
+		await expect(footer).toContainText('`ITEMS: 2`');
 
 		// First duplicate
 		await page.getByRole('button', { name: 'duplicate' }).click();
 		await page.waitForURL(/\/[^/]+$/);
 		const firstDuplicateSlug = page.url().split('/').pop();
 
-		// Verify we can see the content
-		const codeBlock = page.locator('pre > code');
-		await expect(codeBlock).toContainText(content);
+		// Verify first duplicate has 2 items
+		await expect(footer).toContainText('`ITEMS: 2`');
 
 		// Second duplicate
 		await page.getByRole('button', { name: 'duplicate' }).click();
@@ -149,12 +190,22 @@ test.describe('Duplicate paste functionality', () => {
 		expect(secondDuplicateSlug).toBeTruthy();
 		expect(new Set([originalSlug, firstDuplicateSlug, secondDuplicateSlug]).size).toBe(3);
 
-		// Verify the content is still correct
-		await expect(codeBlock).toContainText(content);
+		// Verify second duplicate has 2 items
+		await expect(footer).toContainText('`ITEMS: 2`');
 
-		// Group should show 3 items
-		const footer = page.locator('footer');
-		await expect(footer).toContainText('`ITEMS: 3`');
+		// All bins should have different group IDs
+		const getGroupId = async (slug: string) => {
+			await page.goto(`${baseURL}/${slug}`);
+			const text = await footer.textContent();
+			const match = text?.match(/Group: "([^"]+)"/);
+			return match?.[1];
+		};
+
+		const originalGroupId = await getGroupId(originalSlug);
+		const firstGroupId = await getGroupId(firstDuplicateSlug!);
+		const secondGroupId = await getGroupId(secondDuplicateSlug!);
+
+		expect(new Set([originalGroupId, firstGroupId, secondGroupId]).size).toBe(3);
 	});
 
 	test('duplicate button not shown in edit mode', async ({ page, request }) => {

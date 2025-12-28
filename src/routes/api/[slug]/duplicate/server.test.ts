@@ -1,15 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST } from './+server';
-import { duplicateRow } from '$lib/server/db';
+import { duplicateGroup, getRows } from '$lib/server/db';
 import { generateSlug } from '$lib/server/slug';
 
 vi.mock('$lib/server/db', () => ({
-	duplicateRow: vi.fn()
+	duplicateGroup: vi.fn(),
+	getRows: vi.fn()
 }));
 
 vi.mock('$lib/server/slug', () => ({
 	generateSlug: vi.fn()
+}));
+
+vi.mock('crypto', () => ({
+	randomUUID: vi.fn(() => 'test-group-id')
 }));
 
 vi.mock('@sveltejs/kit', () => ({
@@ -23,12 +28,31 @@ describe('POST /api/[slug]/duplicate', () => {
 		vi.clearAllMocks();
 	});
 
-	it('successfully duplicates a row and returns the new slug', async () => {
+	it('successfully duplicates a bin with multiple rows and returns the first new slug', async () => {
 		const mockSlug = 'original-slug';
-		const mockNewSlug = 'new-slug-123';
+		const mockNewSlug1 = 'new-slug-1';
+		const mockNewSlug2 = 'new-slug-2';
 
-		vi.mocked(generateSlug).mockReturnValue(mockNewSlug);
-		vi.mocked(duplicateRow).mockResolvedValue(true);
+		const mockRows: any = [
+			{
+				slug: 'original-slug',
+				content: 'content1',
+				language: 'js',
+				group_id: 'old-group',
+				length: 4
+			},
+			{
+				slug: 'another-slug',
+				content: 'content2',
+				language: 'py',
+				group_id: 'old-group',
+				length: 4
+			}
+		];
+
+		vi.mocked(getRows).mockResolvedValue(mockRows);
+		vi.mocked(generateSlug).mockReturnValueOnce(mockNewSlug1).mockReturnValueOnce(mockNewSlug2);
+		vi.mocked(duplicateGroup).mockResolvedValue(true);
 
 		const mockRequest: any = {
 			params: { slug: mockSlug },
@@ -40,20 +64,22 @@ describe('POST /api/[slug]/duplicate', () => {
 
 		expect(response.status).toBe(201);
 		expect(body).toEqual({
-			slug: mockNewSlug,
-			url: `http://localhost:3000/${mockNewSlug}`
+			slug: mockNewSlug1,
+			url: `http://localhost:3000/${mockNewSlug1}`
 		});
-		expect(duplicateRow).toHaveBeenCalledWith(mockSlug, mockNewSlug);
+		expect(duplicateGroup).toHaveBeenCalled();
 	});
 
 	it('retries with new slugs on unique constraint violation', async () => {
 		const mockSlug = 'original-slug';
-		const mockNewSlug1 = 'new-slug-1';
-		const mockNewSlug2 = 'new-slug-2';
+		const mockRows: any = [
+			{ slug: 'original-slug', content: 'content', language: 'js', group_id: 'group', length: 4 }
+		];
 
-		vi.mocked(generateSlug).mockReturnValueOnce(mockNewSlug1).mockReturnValueOnce(mockNewSlug2);
+		vi.mocked(getRows).mockResolvedValue(mockRows);
+		vi.mocked(generateSlug).mockReturnValue('new-slug');
 
-		vi.mocked(duplicateRow)
+		vi.mocked(duplicateGroup)
 			.mockRejectedValueOnce(new Error('UNIQUE constraint failed'))
 			.mockResolvedValueOnce(true);
 
@@ -66,32 +92,50 @@ describe('POST /api/[slug]/duplicate', () => {
 		const body = await response.json();
 
 		expect(response.status).toBe(201);
-		expect(body).toEqual({
-			slug: mockNewSlug2,
-			url: `http://localhost:3000/${mockNewSlug2}`
-		});
-		expect(duplicateRow).toHaveBeenCalledTimes(2);
+		expect(body.slug).toBe('new-slug');
+		expect(duplicateGroup).toHaveBeenCalledTimes(2);
 	});
 
-	it('throws error when duplication fails after retries', async () => {
-		const mockSlug = 'original-slug';
+	it('throws error when bin is not found', async () => {
+		const mockSlug = 'missing-slug';
 
-		vi.mocked(generateSlug).mockReturnValue('new-slug-123');
-		vi.mocked(duplicateRow).mockResolvedValue(false);
+		vi.mocked(getRows).mockResolvedValue(null);
 
 		const mockRequest: any = {
 			params: { slug: mockSlug },
 			url: new URL('http://localhost:3000')
 		};
 
-		await expect(POST(mockRequest)).rejects.toThrow('500: Failed to duplicate paste');
+		await expect(POST(mockRequest)).rejects.toThrow('404: Paste not found');
+	});
+
+	it('throws error when duplication fails after retries', async () => {
+		const mockSlug = 'original-slug';
+		const mockRows: any = [
+			{ slug: 'original-slug', content: 'content', language: 'js', group_id: 'group', length: 4 }
+		];
+
+		vi.mocked(getRows).mockResolvedValue(mockRows);
+		vi.mocked(generateSlug).mockReturnValue('new-slug');
+		vi.mocked(duplicateGroup).mockResolvedValue(false);
+
+		const mockRequest: any = {
+			params: { slug: mockSlug },
+			url: new URL('http://localhost:3000')
+		};
+
+		await expect(POST(mockRequest)).rejects.toThrow('500: Failed to duplicate bin');
 	});
 
 	it('throws error when a non-unique error occurs', async () => {
 		const mockSlug = 'original-slug';
+		const mockRows: any = [
+			{ slug: 'original-slug', content: 'content', language: 'js', group_id: 'group', length: 4 }
+		];
 
-		vi.mocked(generateSlug).mockReturnValue('new-slug-123');
-		vi.mocked(duplicateRow).mockRejectedValue(new Error('Database connection failed'));
+		vi.mocked(getRows).mockResolvedValue(mockRows);
+		vi.mocked(generateSlug).mockReturnValue('new-slug');
+		vi.mocked(duplicateGroup).mockRejectedValue(new Error('Database connection failed'));
 
 		const mockRequest: any = {
 			params: { slug: mockSlug },

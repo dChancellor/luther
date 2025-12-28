@@ -166,21 +166,23 @@ describe('Database DELETE functions', () => {
 });
 
 describe('Database DUPLICATE functions', () => {
-	it('duplicateRow is called and returns true', async () => {
-		const { duplicateRow } = await importFreshDb();
-		executeMock.mockResolvedValueOnce({ rowsAffected: 1 });
+	it('duplicateGroup is called and returns true', async () => {
+		const { duplicateGroup } = await importFreshDb();
+		executeMock.mockResolvedValueOnce({ rows: [fakeRow] });
+		batchMock.mockResolvedValueOnce([{ rowsAffected: 1 }, { rowsAffected: 1 }]);
 
-		const result = await duplicateRow(fakeRow.slug, 'new-slug');
+		const slugMap = { [fakeRow.slug]: 'new-slug' };
+		const result = await duplicateGroup(fakeRow.slug, 'new-group-id', slugMap);
 
 		expect(result).toEqual(true);
 	});
 
-	it('duplicateRow returns false when no rows have been duplicated', async () => {
-		const { duplicateRow } = await importFreshDb();
+	it('duplicateGroup returns false when no rows are found', async () => {
+		const { duplicateGroup } = await importFreshDb();
+		executeMock.mockResolvedValueOnce({ rows: [] });
 
-		executeMock.mockResolvedValueOnce({ rowsAffected: 0 });
-
-		const result = await duplicateRow(fakeRow.slug, 'new-slug');
+		const slugMap = { [fakeRow.slug]: 'new-slug' };
+		const result = await duplicateGroup(fakeRow.slug, 'new-group-id', slugMap);
 		expect(result).toEqual(false);
 	});
 });

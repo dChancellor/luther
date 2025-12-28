@@ -99,17 +99,24 @@ export async function createGroup(
 	return rows;
 }
 
-export async function duplicateRow(slug: string, newSlug: string): Promise<boolean> {
-	const res = await db.execute({
-		sql: `
-      INSERT INTO pastes (slug, content, language, group_id)
-      SELECT ?, content, language, group_id
-      FROM pastes
-      WHERE slug = ?
-        AND deleted_at IS NULL
-    `,
-		args: [newSlug, slug]
-	});
+export async function duplicateGroup(
+	slug: string,
+	newGroupId: string,
+	slugMap: Record<string, string>
+): Promise<boolean> {
+	// Get all rows in the group
+	const rows = await getRows(slug);
+	if (!rows || rows.length === 0) return false;
 
-	return res.rowsAffected > 0 ? true : false;
+	// Create the new group and insert all duplicated rows
+	const insertStatements = [
+		{ sql: 'INSERT OR IGNORE INTO paste_groups (id) VALUES (?)', args: [newGroupId] },
+		...rows.map((row) => ({
+			sql: 'INSERT INTO pastes (slug, content, language, group_id) VALUES (?, ?, ?, ?)',
+			args: [slugMap[String(row.slug)], row.content, row.language, newGroupId]
+		}))
+	];
+
+	const result = await db.batch(insertStatements);
+	return result !== null && result.length > 0;
 }

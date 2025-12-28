@@ -78,10 +78,10 @@
 				goto(resolve(`/${newSlug}`));
 			} else {
 				const data = await response.json();
-				errorMessage = data.error || 'Failed to duplicate row';
+				errorMessage = data.error || 'Failed to duplicate bin';
 			}
 		} catch {
-			errorMessage = 'Failed to duplicate row';
+			errorMessage = 'Failed to duplicate bin';
 		}
 	}
 </script>
