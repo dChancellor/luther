@@ -52,7 +52,6 @@ export async function updateRow(slug: string, content: string, lang: string): Pr
 		args: [content, lang, slug]
 	});
 
-	console.log(res);
 	return res.rowsAffected > 0 ? true : false;
 }
 

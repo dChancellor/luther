@@ -10,7 +10,6 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 	const res = isValidText(content);
 	const lang = detectLanguage(content);
 
-	console.log(content);
 	if (!res.valid) return res.response;
 
 	const updated = await updateRow(params.slug, content, lang);
