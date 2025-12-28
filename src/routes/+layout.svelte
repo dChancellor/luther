@@ -48,12 +48,12 @@
 				<a class="action-button" title="New" href={resolve('/')} aria-label="Make a brand new bin"
 					><NewNote /></a
 				>
-				<!-- TODO: make this actually duplicate -->
-				<a
+				<button
 					class="action-button"
 					title="Duplicate Bin"
-					href={resolve('/')}
-					aria-label="Duplicate notes in a brand new bin"><DuplicateNote /></a
+					disabled={!data.isApiKeyValid}
+					onclick={() => {}}
+					aria-label="Duplicate notes in a brand new bin"><DuplicateNote /></button
 				>
 				<button
 					class="action-button"
@@ -127,6 +127,10 @@
 	}
 	button:hover {
 		filter: brightness(200%);
+	}
+	button:disabled {
+		filter: brightness(40%);
+		cursor: not-allowed;
 	}
 	a {
 		width: 1.5rem;

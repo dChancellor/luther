@@ -26,6 +26,8 @@
 	.settings {
 		margin-right: 2rem;
 		display: flex;
-		flex-flow: column;
+		flex-flow: row-reverse wrap;
+		gap: 2rem;
+		align-items: center;
 	}
 </style>
