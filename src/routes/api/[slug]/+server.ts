@@ -2,15 +2,17 @@ import type { RequestHandler } from './$types';
 import { deleteRow, updateRow } from '$lib/server/db';
 import { error } from '@sveltejs/kit';
 import { isValidText } from '$lib/server/middlewares/valid-text';
+import { detectLanguage } from '$lib/server/detect-language';
 
 export const PUT: RequestHandler = async ({ params, request }) => {
-	console.log('PUTTING');
 	const content = await request.text();
 
 	const res = isValidText(content);
+	const lang = detectLanguage(content);
+
 	if (!res.valid) return res.response;
 
-	const updated = await updateRow(params.slug, content);
+	const updated = await updateRow(params.slug, content, lang);
 
 	if (!updated) {
 		error(404, 'Paste not found');
