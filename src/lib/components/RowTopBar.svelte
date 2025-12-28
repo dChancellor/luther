@@ -1,5 +1,6 @@
 <script lang="ts">
-	const { row, editing, onEditClick, onCancelClick, onDeleteClick, onSaveClick } = $props();
+	const { row, editing, onEditClick, onCancelClick, onDeleteClick, onSaveClick, onDuplicateClick } =
+		$props();
 
 	const readableDate = new Date(row.created_at).toDateString();
 </script>
@@ -15,6 +16,7 @@
 			<button class="tertiary" onclick={() => onCancelClick()}>cancel</button>
 		{:else}
 			<button class="tertiary" onclick={() => onEditClick(row.slug, row.raw)}>edit</button>
+			<button class="tertiary" onclick={() => onDuplicateClick(row.slug)}>duplicate</button>
 		{/if}
 		<button class="tertiary" onclick={() => onDeleteClick(row.slug)}>delete</button>
 	</div>

@@ -98,3 +98,18 @@ export async function createGroup(
 	]);
 	return rows;
 }
+
+export async function duplicateRow(slug: string, newSlug: string): Promise<boolean> {
+	const res = await db.execute({
+		sql: `
+      INSERT INTO pastes (slug, content, language, group_id)
+      SELECT ?, content, language, group_id
+      FROM pastes
+      WHERE slug = ?
+        AND deleted_at IS NULL
+    `,
+		args: [newSlug, slug]
+	});
+
+	return res.rowsAffected > 0 ? true : false;
+}

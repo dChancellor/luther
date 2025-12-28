@@ -63,6 +63,27 @@
 		const { raw } = rows.filter((row) => row.slug === slug)[0];
 		navigator.clipboard.writeText(raw);
 	}
+
+	async function onDuplicateClick(slug: string): Promise<void> {
+		errorMessage = null;
+		try {
+			const response = await fetch(`/api/${slug}/duplicate`, {
+				method: 'POST'
+			});
+
+			if (response.ok) {
+				const data = await response.json();
+				const newSlug = data.slug;
+				// Navigate to the new slug
+				goto(resolve(`/${newSlug}`));
+			} else {
+				const data = await response.json();
+				errorMessage = data.error || 'Failed to duplicate row';
+			}
+		} catch {
+			errorMessage = 'Failed to duplicate row';
+		}
+	}
 </script>
 
 <svelte:head>
@@ -87,6 +108,7 @@
 			{onEditClick}
 			{onCancelClick}
 			{onSaveClick}
+			{onDuplicateClick}
 		/>
 	{/if}
 	{#if editingSlug === row.slug}

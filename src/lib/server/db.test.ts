@@ -164,3 +164,23 @@ describe('Database DELETE functions', () => {
 		expect(result).toEqual(false);
 	});
 });
+
+describe('Database DUPLICATE functions', () => {
+	it('duplicateRow is called and returns true', async () => {
+		const { duplicateRow } = await importFreshDb();
+		executeMock.mockResolvedValueOnce({ rowsAffected: 1 });
+
+		const result = await duplicateRow(fakeRow.slug, 'new-slug');
+
+		expect(result).toEqual(true);
+	});
+
+	it('duplicateRow returns false when no rows have been duplicated', async () => {
+		const { duplicateRow } = await importFreshDb();
+
+		executeMock.mockResolvedValueOnce({ rowsAffected: 0 });
+
+		const result = await duplicateRow(fakeRow.slug, 'new-slug');
+		expect(result).toEqual(false);
+	});
+});
