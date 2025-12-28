@@ -1,7 +1,7 @@
 import { env } from '$env/dynamic/private';
 import type { LayoutServerLoad } from './$types';
 
-export const load: LayoutServerLoad = async ({ cookies }) => {
+export const load: LayoutServerLoad = async ({ cookies, params }) => {
 	const showScanLines =
 		cookies.get('showScanLines') === 'true' || cookies.get('showScanLines') === undefined;
 
@@ -15,6 +15,7 @@ export const load: LayoutServerLoad = async ({ cookies }) => {
 		showScanLines,
 		customColor,
 		apiKey,
-		isApiKeyValid
+		isApiKeyValid,
+		slug: params.slug
 	};
 };
