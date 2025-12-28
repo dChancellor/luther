@@ -131,7 +131,7 @@ describe('Database UPDATE functions', () => {
 		const { updateRow } = await importFreshDb();
 		executeMock.mockResolvedValueOnce({ rowsAffected: 1 });
 
-		const result = await updateRow(fakeRow.slug, 'new content');
+		const result = await updateRow(fakeRow.slug, 'new content', 'text');
 		expect(result).toBeTruthy();
 	});
 

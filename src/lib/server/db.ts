@@ -41,18 +41,18 @@ export async function getRows(slug: string): Promise<Row[] | null> {
 	return res.rows;
 }
 
-export async function updateRow(slug: string, content: string): Promise<boolean> {
+export async function updateRow(slug: string, content: string, lang: string): Promise<boolean> {
 	const res = await db.execute({
 		sql: `
     UPDATE pastes
-    SET content = ?
+    SET content = ?, language = ?
     WHERE slug = ?
       AND deleted_at IS NULL
   `,
-		args: [content, slug]
+		args: [content, lang, slug]
 	});
 
-	console.log('res', res);
+	console.log(res);
 	return res.rowsAffected > 0 ? true : false;
 }
 
